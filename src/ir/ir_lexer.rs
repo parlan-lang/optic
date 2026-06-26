@@ -4,7 +4,8 @@
 
 /// Represents the type of the token
 /// 
-/// it implements [`Copy`] because of its reduced size
+/// A [`Token`] can have one of several types (e.g., [`TokenKind::Define`]), and this enum represents
+/// all of the posible types that a [`Token`] can have
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TokenKind {
 // Keywords
@@ -31,6 +32,8 @@ pub enum TokenKind {
 }
 
 /// Represents a token
+/// 
+/// A [`Token`] is the minimal, meaningful unit of the source code
 #[derive(Debug, Clone)]
 pub struct Token {
     /// A tuple that contains the start and end of the token' lexeme
@@ -47,6 +50,10 @@ impl Token {
     }
 }
 
+/// A Lexer/Tokenizer for the textual IR
+/// 
+/// [`IrLexer`] transforms the source code into a stream of [`Token`]s.  
+/// It exposes the function [`IrLexer::next_token`], which returns the next token in the source code
 pub struct IrLexer {
     /// the source code as bytes
     source: Vec<u8>,
