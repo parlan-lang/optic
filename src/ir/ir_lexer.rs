@@ -9,14 +9,20 @@
 pub enum TokenKind {
 // Keywords
     Ret,
+    Define,
 
 // Types
     I32,
 
 // Delimiters
     Dot,
+    Lparen,
+    Rparen,
+    Lbrace,
+    Rbrace,
 
 // Literals
+    GlobSym, 
     IntLit,
 
 // Sentinels
@@ -74,6 +80,7 @@ impl IrLexer {
         match &self.source[start as usize..self.cursor as usize] {
             b"ret" => TokenKind::Ret,
             b"i32" => TokenKind::I32,
+            b"define" => TokenKind::Define,
             _ => TokenKind::Error
         }
     }
@@ -100,7 +107,31 @@ impl IrLexer {
             b'.' => {
                 self.cursor += 1;
                 Token::new((self.cursor - 1, self.cursor), TokenKind::Dot)
-            },
+            }
+            b'(' => {
+                self.cursor += 1;
+                Token::new((self.cursor - 1, self.cursor), TokenKind::Lparen)
+            }
+            b')' => {
+                self.cursor += 1;
+                Token::new((self.cursor - 1, self.cursor), TokenKind::Rparen)
+            }
+            b'{' => {
+                self.cursor += 1;
+                Token::new((self.cursor - 1, self.cursor), TokenKind::Lbrace)
+            }
+            b'}' => {
+                self.cursor += 1;
+                Token::new((self.cursor - 1, self.cursor), TokenKind::Rbrace)
+            }
+            b'@' => {
+                self.cursor += 1; // do not include the `@`
+                let start = self.cursor;
+
+                while !self.is_at_end() && self.is_alphanumeric() { self.cursor += 1; }
+
+                Token::new((start, self.cursor), TokenKind::GlobSym)
+            }
             b'0'..=b'9' => {
                 let start = self.cursor;
 
