@@ -4,11 +4,11 @@ use crate::module::instruction::*;
 
 /// Represents a parameters
 /// 
-/// A [`Parameter`] contains all the related information about one parameter of a [`Function`], its name and type
+/// A [`Parameter`] contains all the related information about one parameter of a [`Function`], its virtual register and type
 #[derive(Debug, Clone)]
 pub struct Parameter {
-    name: String,
-    ty: Type
+    pub vreg: usize,
+    pub ty: Type
 }
 
 /// Represents a function
@@ -17,8 +17,8 @@ pub struct Parameter {
 /// being compiled, like the name, the [`Parameter`]s, the return type and body
 #[derive(Debug, Clone)]
 pub struct Function {
-    name: String,
-    params: Vec<Parameter>,
-    ty: Type,
-    body: Vec<Instruction>
+    pub name: String,
+    pub params: Vec<Parameter>,
+    pub ty: Type,
+    pub body: Vec<Instruction>
 }

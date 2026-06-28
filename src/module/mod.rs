@@ -15,6 +15,6 @@ pub mod function;
 /// compiled, all the functions and global symbols
 #[derive(Debug, Clone)]
 pub struct Module {
-    name: String,
-    functions: Vec<function::Function>
+    pub name: String,
+    pub functions: Vec<function::Function>
 }

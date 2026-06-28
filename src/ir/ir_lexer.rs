@@ -17,13 +17,15 @@ pub enum TokenKind {
 
 // Delimiters
     Dot,
+    Comma,
     Lparen,
     Rparen,
     Lbrace,
     Rbrace,
 
 // Literals
-    GlobSym, 
+    GlobSym,
+    Vreg, 
     IntLit,
 
 // Sentinels
@@ -47,6 +49,10 @@ impl Token {
             span,
             kind
         };
+    }
+
+    pub fn get_span(&self) -> std::ops::Range<usize> {
+        self.span.0 as usize..self.span.1 as usize
     }
 }
 
@@ -115,6 +121,10 @@ impl IrLexer {
                 self.cursor += 1;
                 Token::new((self.cursor - 1, self.cursor), TokenKind::Dot)
             }
+            b',' => {
+                self.cursor += 1;
+                Token::new((self.cursor - 1, self.cursor), TokenKind::Comma)
+            }
             b'(' => {
                 self.cursor += 1;
                 Token::new((self.cursor - 1, self.cursor), TokenKind::Lparen)
@@ -138,6 +148,14 @@ impl IrLexer {
                 while !self.is_at_end() && self.is_alphanumeric() { self.cursor += 1; }
 
                 Token::new((start, self.cursor), TokenKind::GlobSym)
+            }
+            b'%' => {
+                self.cursor += 1; // do not include the `%`
+                let start = self.cursor;
+
+                while !self.is_at_end() && self.is_alphanumeric() { self.cursor += 1; }
+
+                Token::new((start, self.cursor), TokenKind::Vreg)
             }
             b'0'..=b'9' => {
                 let start = self.cursor;
