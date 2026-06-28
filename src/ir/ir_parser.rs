@@ -8,8 +8,9 @@ use crate::ir::ir_lexer::*;
 use crate::module::{
     Module, 
     instruction::*, 
-    function::*
+    function::*,
 };
+use crate::cfg::*;
 
 pub struct IrParser {
     lexer: IrLexer,
@@ -169,7 +170,7 @@ impl IrParser {
 
         self.curr_vreg = curr_vreg; // reset the virtual registers
         
-        Function { name, params, ty, body }
+        Function { name, params, ty, body, cfg: ControlFlowGraph::new() }
     }
 
     /// Parses a module

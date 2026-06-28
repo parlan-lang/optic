@@ -6,6 +6,8 @@
 
 #![allow(unused)]
 
+use crate::cfg::builder::CfgBuilder;
+
 pub mod instruction;
 pub mod function;
 
@@ -17,4 +19,13 @@ pub mod function;
 pub struct Module {
     pub name: String,
     pub functions: Vec<function::Function>
+}
+
+impl Module {
+    pub fn build_cfg(&mut self) {
+        for func in &mut self.functions {
+            let mut builder = CfgBuilder::new(func);
+            builder.build_cfg();
+        }
+    }
 }
