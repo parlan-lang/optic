@@ -38,20 +38,20 @@ impl<'a> CBackend<'a> {
         }
     }
 
-    fn compile_inst(&self, inst: &Instruction, header: &mut BufWriter<Vec<u8>>, body: &mut BufWriter<Vec<u8>>) {
+    fn compile_inst(&self, inst: &Instruction, global: &mut BufWriter<Vec<u8>>, header: &mut BufWriter<Vec<u8>>, body: &mut BufWriter<Vec<u8>>) {
         match inst {
             Instruction::Ret { val, ty } => {
                 writeln!(body, "  return ({}){};", self.compile_type(ty), self.compile_value(val));
             },
             Instruction::Copy { vreg, val, ty } => {
-                writeln!(header, "{} vreg_{};", self.compile_type(ty), *vreg);
+                writeln!(header, "  {} vreg_{};", self.compile_type(ty), *vreg);
                 writeln!(body, "  vreg_{} = ({}){};", *vreg, self.compile_type(ty), self.compile_value(val));
             }
             _ => todo!()
         }
     }
 
-    fn compile_func(&self, func: &Function, header: &mut BufWriter<Vec<u8>>, body: &mut BufWriter<Vec<u8>>) {
+    fn compile_func(&self, func: &Function, global: &mut BufWriter<Vec<u8>>, body: &mut BufWriter<Vec<u8>>) {
         let params = func.params.iter().map(|p| {
             format!("{} vreg_{}", self.compile_type(&p.ty), p.vreg)
         }).collect::<Vec<String>>().join(", ");
@@ -63,14 +63,19 @@ impl<'a> CBackend<'a> {
             params
         );
 
+        let mut header = &mut BufWriter::new(Vec::new());
+        let mut local_body = &mut BufWriter::new(Vec::new());
+
         for blk in &func.cfg.blocks {
-            writeln!(body, "BB_{}:", blk.id.0);
+            writeln!(local_body, "BB_{}:", blk.id.0);
 
             for inst in &blk.instructions {
-                self.compile_inst(inst, header, body);
+                self.compile_inst(inst, global, header, local_body);
             }
         }
 
+        body.write(header.buffer()).unwrap();
+        body.write(local_body.buffer()).unwrap();
         writeln!(body, "}}");
     }
 
