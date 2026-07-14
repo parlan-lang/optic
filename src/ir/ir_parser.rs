@@ -75,6 +75,17 @@ impl IrParser {
 
                 Value::IntLit(n)
             }
+            TokenKind::Vreg => {
+                let vreg = &self.src[tk.get_span()];
+
+                match self.local.get(vreg) {
+                    Some(vreg) => Value::Vreg(*vreg),
+                    None => {
+                        eprintln!("error: undeclared virtual register {:?}", vreg);
+                        panic!()
+                    }
+                }
+            }
             _ => {
                 eprintln!("error: expected a value, found {:?} instead", tk.kind);
                 panic!()
@@ -109,6 +120,13 @@ impl IrParser {
         Instruction::Ret { val, ty }
     }
 
+    /// Parses the `copy` instruction
+    fn parse_ins_copy(&mut self) -> Value {
+        self.eat(TokenKind::Copy);
+
+        self.parse_value()
+    }
+
     /// Parses an instruction
     /// 
     /// Panics
@@ -117,6 +135,25 @@ impl IrParser {
     fn parse_ins(&mut self) -> Instruction {
         match self.peek().kind {
             TokenKind::Ret => self.parse_ins_ret(),
+            TokenKind::Vreg => {
+                let curr_tk = self.next(); // we already know this is Vreg
+                let vreg = self.next_vreg();
+                self.local.insert(self.src[curr_tk.get_span()].to_string(), vreg);
+
+                self.eat(TokenKind::Assing);
+                self.eat(TokenKind::Dot);
+                let ty = self.parse_type();
+
+                let val = match self.peek().kind {
+                    TokenKind::Copy => self.parse_ins_copy(),
+                    _ => {
+                        eprintln!("error: expected an instruction, found {:?} instead", self.peek().kind);
+                        panic!()
+                    }
+                };
+
+                Instruction::Copy { vreg, val, ty }
+            }
             _ => {
                 eprintln!("error: expected an instruction, found {:?} instead", self.peek().kind);
                 panic!()

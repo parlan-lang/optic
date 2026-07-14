@@ -7,6 +7,7 @@
 #[derive(Debug, Clone)]
 pub enum Value {
     IntLit(usize),
+    Vreg(usize),
 }
 
 /// The Type of an [`Instruction`]
@@ -27,5 +28,10 @@ pub enum Instruction {
     Ret {
         val: Value,
         ty: Type 
+    },
+    Copy {
+        vreg: usize,
+        val: Value,
+        ty: Type
     }
 }

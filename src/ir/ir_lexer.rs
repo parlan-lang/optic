@@ -11,6 +11,7 @@ pub enum TokenKind {
 // Keywords
     Ret,
     Define,
+    Copy,
 
 // Types
     I32,
@@ -22,6 +23,7 @@ pub enum TokenKind {
     Rparen,
     Lbrace,
     Rbrace,
+    Assing,
 
 // Literals
     GlobSym,
@@ -94,6 +96,7 @@ impl IrLexer {
             b"ret" => TokenKind::Ret,
             b"i32" => TokenKind::I32,
             b"define" => TokenKind::Define,
+            b"copy" => TokenKind::Copy,
             _ => TokenKind::Error
         }
     }
@@ -140,6 +143,10 @@ impl IrLexer {
             b'}' => {
                 self.cursor += 1;
                 Token::new((self.cursor - 1, self.cursor), TokenKind::Rbrace)
+            }
+            b'=' => {
+                self.cursor += 1;
+                Token::new((self.cursor - 1, self.cursor), TokenKind::Assing)
             }
             b'@' => {
                 self.cursor += 1; // do not include the `@`

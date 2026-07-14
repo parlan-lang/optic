@@ -33,65 +33,62 @@ impl<'a> CBackend<'a> {
 
     fn compile_value(&self, val: &Value) -> String {
         match val {
-            Value::IntLit(i) => format!("{}", i)
+            Value::IntLit(i) => format!("{}", i),
+            Value::Vreg(v) => format!("vreg_{}", v),
         }
     }
 
-    fn compile_inst(&self, inst: &Instruction) {
-        let mut writer = BufWriter::new(&self.out);
-
+    fn compile_inst(&self, inst: &Instruction, header: &mut BufWriter<Vec<u8>>, body: &mut BufWriter<Vec<u8>>) {
         match inst {
             Instruction::Ret { val, ty } => {
-                writeln!(writer, "  return ({}){};", self.compile_type(ty), self.compile_value(val));
+                writeln!(body, "  return ({}){};", self.compile_type(ty), self.compile_value(val));
+            },
+            Instruction::Copy { vreg, val, ty } => {
+                writeln!(header, "{} vreg_{};", self.compile_type(ty), *vreg);
+                writeln!(body, "  vreg_{} = ({}){};", *vreg, self.compile_type(ty), self.compile_value(val));
             }
+            _ => todo!()
         }
-
-        writer.flush().unwrap();
     }
 
-    fn compile_func(&self, func: &Function) {
-        let mut writer = BufWriter::new(&self.out);
-        
+    fn compile_func(&self, func: &Function, header: &mut BufWriter<Vec<u8>>, body: &mut BufWriter<Vec<u8>>) {
         let params = func.params.iter().map(|p| {
             format!("{} vreg_{}", self.compile_type(&p.ty), p.vreg)
         }).collect::<Vec<String>>().join(", ");
 
         writeln!(
-            writer, "\n{} {}({}) {{", 
+            body, "\n{} {}({}) {{", 
             self.compile_type(&func.ty), 
             func.name, 
             params
         );
-        writer.flush().unwrap();
 
         for blk in &func.cfg.blocks {
-            writeln!(writer, "BB_{}:", blk.id.0);
-            writer.flush().unwrap();
+            writeln!(body, "BB_{}:", blk.id.0);
 
             for inst in &blk.instructions {
-                self.compile_inst(inst);
+                self.compile_inst(inst, header, body);
             }
         }
 
-        writeln!(writer, "}}");
-        
-        writer.flush().unwrap();
+        writeln!(body, "}}");
     }
 
-    pub fn compile(&self) {
-        let mut writer = BufWriter::new(&self.out);
+    pub fn compile(&mut self) {
+        let mut header = BufWriter::new(Vec::new());
+        let mut body = BufWriter::new(Vec::new());
         
-        writeln!(writer, 
+        writeln!(header, 
             r#"// Module "{}"
 #include <stdint.h>"#, 
             self.module.name
         );
-        writer.flush().unwrap();
         
         for func in &self.module.functions {
-            self.compile_func(func);
+            self.compile_func(func, &mut header, &mut body);
         }
 
-        writer.flush().unwrap();
+        self.out.write(header.buffer()).unwrap();
+        self.out.write(body.buffer()).unwrap();
     }
 }

@@ -51,7 +51,7 @@ Options:
     module.build_cfg();
     let cfg_build_time = start.elapsed().as_secs_f32();
 
-    let codegen = codegen::c_backend::CBackend::new(output, &module);
+    let mut codegen = codegen::c_backend::CBackend::new(output, &module);
 
     start = Instant::now();
     codegen.compile();
