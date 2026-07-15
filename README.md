@@ -20,7 +20,7 @@ define @main() i32 {
 }
 ```
 
-Note: While development is ongoing, this simple return-integer program is currently the primary syntax fully supported for compilation
+The full documentation of the IR is located [here](./docs/index.md)
 
 ## Requierements & Installation
 
