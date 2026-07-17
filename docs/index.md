@@ -38,7 +38,14 @@ define @main() i32 {
 
 ### Values
 
-A Value is just a immediate value or virtual register, a Value can be assigned to a virtual register, and an instruction may return a Value.
+A Value is just a immediate value or virtual register, a Value can be assigned to a virtual register, and an instruction may return a Value. 
+
+This is a list of all value's descriptions and multiple examples
+
+| Description | Example |
+| :-- | :-- |
+| A virtual register | `%x` |
+| A integer literal, prefix with `-` to denote a negative literal | `2`, `-1` |
 
 ### Instructions
 
@@ -48,3 +55,9 @@ This is a list of all instructions, its mnemonics, syntax, description and an ex
 | :-- | :-- | :-- | :-- |
 | `copy` | `copy VALUE` | Copies a value into a register | `%r =.i32 copy 42` |
 | `ret` | `ret.TYPE VALUE` | returns from the current function with a Value | `ret.i32 42` |
+| `add` | `add VALUE, VALUE` | adds two integer values | `%r =.i32 add 2, 2` |
+| `sub` | `sub VALUE, VALUE` | substracts two integer values | `%r =.i32 sub 2, 2` |
+| `mul` | `mul VALUE, VALUE` | multiplies two integer values | `%r =.i32 mul 2, 2` |
+| `div` | `div VALUE, VALUE` | divides two integer values (signed) | `%r =.i32 div 2, 2` |
+| `udiv` | `udiv VALUE, VALUE` | divides two integer values (unsigned) | `%r =.i32 udiv 2, 2` |
+| `call` | `call FUNC(VALUES,...)` | calls a function with the specified arguments | `%r =.i32 call @add(2, 2)` |
