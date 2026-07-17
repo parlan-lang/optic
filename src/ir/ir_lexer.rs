@@ -172,6 +172,14 @@ impl IrLexer {
 
                 Token::new((start, self.cursor), TokenKind::Vreg)
             }
+            b'-' => {
+                let start = self.cursor;
+                self.cursor += 1;
+
+                while !self.is_at_end() && self.is_numeric() { self.cursor += 1; }
+
+                Token::new((start,self.cursor), TokenKind::IntLit)
+            }
             b'0'..=b'9' => {
                 let start = self.cursor;
 

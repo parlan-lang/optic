@@ -26,7 +26,7 @@ impl<'a> CBackend<'a> {
 
     fn compile_type(&self, ty: &Type) -> &str {
         match ty {
-            Type::I32 => "int32_t"
+            Type::I32 => "uint32_t"
         }
     }
 

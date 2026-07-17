@@ -71,9 +71,13 @@ impl IrParser {
         let tk = self.next();
         match tk.kind {
             TokenKind::IntLit => {
-                let n = self.src[tk.get_span()].parse::<usize>().unwrap();
+                let n = &self.src[tk.get_span()];
+                if n.starts_with('-') {
+                    let num = n.parse::<isize>().unwrap();
+                    return Value::IntLit(num as usize);
+                }
 
-                Value::IntLit(n)
+                Value::IntLit(n.parse().unwrap())
             }
             TokenKind::Vreg => {
                 let vreg = &self.src[tk.get_span()];
