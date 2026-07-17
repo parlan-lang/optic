@@ -24,6 +24,8 @@ pub enum Type {
 pub enum OpKind {
     Add,
     Sub,
+    Mul,
+    Div,
 }
 
 /// Represents a single instruction and its data

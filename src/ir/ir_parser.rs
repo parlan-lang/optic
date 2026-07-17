@@ -133,6 +133,8 @@ impl IrParser {
         let kind = match self.next().kind {
             TokenKind::Add => OpKind::Add,
             TokenKind::Sub => OpKind::Sub,
+            TokenKind::Mul => OpKind::Mul,
+            TokenKind::Div => OpKind::Div,
             _ => panic!()
         };
 
@@ -162,7 +164,8 @@ impl IrParser {
 
                 match self.peek().kind {
                     TokenKind::Copy => self.parse_ins_copy(vreg, ty),
-                    TokenKind::Add | TokenKind::Sub => self.parse_ins_op(vreg, ty),
+                    TokenKind::Add | TokenKind::Sub |
+                    TokenKind::Mul | TokenKind::Div => self.parse_ins_op(vreg, ty),
                     _ => {
                         eprintln!("error: expected an instruction, found {:?} instead", self.peek().kind);
                         panic!()

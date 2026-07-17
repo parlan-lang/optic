@@ -44,16 +44,18 @@ impl<'a> CBackend<'a> {
             },
             Instruction::Copy { vreg, val, ty } => {
                 writeln!(header, "  {} vreg_{};", self.compile_type(ty), *vreg);
-                writeln!(body, "  vreg_{} = {};", *vreg, self.compile_value(val));
+                writeln!(body, "  vreg_{} = ({}){};", *vreg, self.compile_type(ty), self.compile_value(val));
             }
             Instruction::Op { vreg, kind, lhs, rhs, ty } => {
                 let op = match kind {
                     OpKind::Add => "+",
-                    OpKind::Sub => "-"
+                    OpKind::Sub => "-",
+                    OpKind::Mul => "*",
+                    OpKind::Div => "/",
                 };
 
                 writeln!(header, "  {} vreg_{};", self.compile_type(ty), *vreg);
-                writeln!(body, "  vreg_{} = ({} + {});", *vreg, self.compile_value(lhs), self.compile_value(rhs));                
+                writeln!(body, "  vreg_{} = ({})({} {} {});", *vreg, self.compile_type(ty), self.compile_value(lhs), op, self.compile_value(rhs));                
             }
         }
     }

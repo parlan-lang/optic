@@ -14,6 +14,8 @@ pub enum TokenKind {
     Copy,
     Add,
     Sub,
+    Mul,
+    Div,
 
 // Types
     I32,
@@ -101,6 +103,8 @@ impl IrLexer {
             b"copy" => TokenKind::Copy,
             b"add" => TokenKind::Add,
             b"sub" => TokenKind::Sub,
+            b"mul" => TokenKind::Mul,
+            b"div" => TokenKind::Div,
             _ => TokenKind::Error
         }
     }
