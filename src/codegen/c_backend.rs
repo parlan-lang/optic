@@ -51,7 +51,7 @@ impl<'a> CBackend<'a> {
                     OpKind::Add => "+",
                     OpKind::Sub => "-",
                     OpKind::Mul => "*",
-                    OpKind::Div => "/",
+                    OpKind::Div | OpKind::Udiv => "/",
                 };
 
                 writeln!(header, "  {} vreg_{};", self.compile_type(ty), *vreg);

@@ -139,6 +139,7 @@ impl IrParser {
             TokenKind::Sub => OpKind::Sub,
             TokenKind::Mul => OpKind::Mul,
             TokenKind::Div => OpKind::Div,
+            TokenKind::Udiv => OpKind::Udiv,
             _ => panic!()
         };
 

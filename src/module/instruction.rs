@@ -26,6 +26,7 @@ pub enum OpKind {
     Sub,
     Mul,
     Div,
+    Udiv,
 }
 
 /// Represents a single instruction and its data
