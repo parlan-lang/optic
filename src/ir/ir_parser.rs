@@ -121,10 +121,26 @@ impl IrParser {
     }
 
     /// Parses the `copy` instruction
-    fn parse_ins_copy(&mut self) -> Value {
+    fn parse_ins_copy(&mut self, vreg: usize, ty: Type) -> Instruction {
         self.eat(TokenKind::Copy);
 
-        self.parse_value()
+        let val = self.parse_value();
+
+        Instruction::Copy { vreg, val, ty }
+    }
+
+    fn parse_ins_op(&mut self, vreg: usize, ty: Type) -> Instruction {
+        let kind = match self.next().kind {
+            TokenKind::Add => OpKind::Add,
+            TokenKind::Sub => OpKind::Sub,
+            _ => panic!()
+        };
+
+        let lhs = self.parse_value();
+        self.eat(TokenKind::Comma);
+        let rhs = self.parse_value();
+
+        Instruction::Op { vreg, kind, lhs, rhs, ty }
     }
 
     /// Parses an instruction
@@ -144,15 +160,14 @@ impl IrParser {
                 self.eat(TokenKind::Dot);
                 let ty = self.parse_type();
 
-                let val = match self.peek().kind {
-                    TokenKind::Copy => self.parse_ins_copy(),
+                match self.peek().kind {
+                    TokenKind::Copy => self.parse_ins_copy(vreg, ty),
+                    TokenKind::Add | TokenKind::Sub => self.parse_ins_op(vreg, ty),
                     _ => {
                         eprintln!("error: expected an instruction, found {:?} instead", self.peek().kind);
                         panic!()
                     }
-                };
-
-                Instruction::Copy { vreg, val, ty }
+                }
             }
             _ => {
                 eprintln!("error: expected an instruction, found {:?} instead", self.peek().kind);

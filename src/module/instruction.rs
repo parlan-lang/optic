@@ -19,6 +19,13 @@ pub enum Type {
     I32,
 }
 
+/// The kind of a binary or boolean operation 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum OpKind {
+    Add,
+    Sub,
+}
+
 /// Represents a single instruction and its data
 /// 
 /// A [`Instruction`] contains all the information related to that single instruction
@@ -32,6 +39,13 @@ pub enum Instruction {
     Copy {
         vreg: usize,
         val: Value,
+        ty: Type
+    },
+    Op {
+        vreg: usize,
+        kind: OpKind,
+        lhs: Value,
+        rhs: Value,
         ty: Type
     }
 }
