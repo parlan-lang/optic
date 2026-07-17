@@ -57,6 +57,12 @@ impl<'a> CBackend<'a> {
                 writeln!(header, "  {} vreg_{};", self.compile_type(ty), *vreg);
                 writeln!(body, "  vreg_{} = ({})({} {} {});", *vreg, self.compile_type(ty), self.compile_value(lhs), op, self.compile_value(rhs));                
             }
+            Instruction::Call { vreg, func, args, ty } => {
+                let args = args.iter().map(|v| self.compile_value(v)).collect::<Vec<String>>().join(",");
+
+                writeln!(header, "  {} vreg_{};", self.compile_type(ty), *vreg);
+                writeln!(body, "  vreg_{} = ({}){}({});", *vreg, self.compile_type(ty), func, args);
+            }
         }
     }
 

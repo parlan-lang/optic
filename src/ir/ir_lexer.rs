@@ -17,6 +17,7 @@ pub enum TokenKind {
     Mul,
     Div,
     Udiv,
+    Call,
 
 // Types
     I32,
@@ -107,6 +108,7 @@ impl IrLexer {
             b"mul" => TokenKind::Mul,
             b"div" => TokenKind::Div,
             b"udiv" => TokenKind::Udiv,
+            b"call" => TokenKind::Call,
             _ => TokenKind::Error
         }
     }

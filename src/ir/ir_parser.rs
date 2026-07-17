@@ -150,6 +150,29 @@ impl IrParser {
         Instruction::Op { vreg, kind, lhs, rhs, ty }
     }
 
+    fn parse_ins_call(&mut self, vreg: usize, ty: Type) -> Instruction {
+        self.eat(TokenKind::Call);
+
+        let func_tk = self.eat(TokenKind::GlobSym);
+        let func = self.src[func_tk.get_span()].to_string();
+
+        self.eat(TokenKind::Lparen);
+
+        let mut args = Vec::new();
+
+        if self.peek().kind != TokenKind::Rparen {
+            args.push(self.parse_value());
+            while self.peek().kind == TokenKind::Comma {
+                self.eat(TokenKind::Comma);
+                args.push(self.parse_value());
+            }
+        }
+
+        self.eat(TokenKind::Rparen);
+
+        Instruction::Call { vreg, func, args, ty }
+    }
+
     /// Parses an instruction
     /// 
     /// Panics
@@ -169,6 +192,7 @@ impl IrParser {
 
                 match self.peek().kind {
                     TokenKind::Copy => self.parse_ins_copy(vreg, ty),
+                    TokenKind::Call => self.parse_ins_call(vreg, ty),
                     TokenKind::Add | TokenKind::Sub |
                     TokenKind::Mul | TokenKind::Div => self.parse_ins_op(vreg, ty),
                     _ => {

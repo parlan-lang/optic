@@ -50,5 +50,11 @@ pub enum Instruction {
         lhs: Value,
         rhs: Value,
         ty: Type
-    }
+    },
+    Call {
+        vreg: usize,
+        func: String,
+        args: Vec<Value>,
+        ty: Type
+    },
 }
