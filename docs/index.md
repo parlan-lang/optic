@@ -47,6 +47,12 @@ This is a list of all value's descriptions and multiple examples
 | A virtual register | `%x` |
 | A integer literal, prefix with `-` to denote a negative literal | `2`, `-1` |
 
+### Labels 
+
+A label is a tag that denotes a position in the IR, an instruction can jump conditionally or unconditionally to them.
+
+A label starts with `#`, for example: `#my_label`
+
 ### Instructions
 
 This is a list of all instructions, its mnemonics, syntax, description and an example. 
@@ -61,3 +67,4 @@ This is a list of all instructions, its mnemonics, syntax, description and an ex
 | `div` | `div VALUE, VALUE` | divides two integer values (signed) | `%r =.i32 div 2, 2` |
 | `udiv` | `udiv VALUE, VALUE` | divides two integer values (unsigned) | `%r =.i32 udiv 2, 2` |
 | `call` | `call FUNC(VALUES,...)` | calls a function with the specified arguments | `%r =.i32 call @add(2, 2)` |
+| `jmp` | `jmp LABEL` | jumps inconditionaly to a label | `jmp #end` |
