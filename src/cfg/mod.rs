@@ -41,6 +41,10 @@ impl ControlFlowGraph {
         id
     }
 
+    pub fn get_block(&self, id: BlockId) -> &BasicBlock {
+        &self.blocks[id.0]
+    }
+
     pub fn add_ins(&mut self, block_id: BlockId, ins: Instruction) {
         if let Some(block) = self.blocks.get_mut(block_id.0) {
             block.instructions.push(ins);

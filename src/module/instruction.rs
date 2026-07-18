@@ -57,4 +57,23 @@ pub enum Instruction {
         args: Vec<Value>,
         ty: Type
     },
+    Label (String),
+    Jmp (String),
+}
+
+impl Instruction {
+    pub fn is_label(&self) -> bool {
+        matches!(self, Instruction::Label(_))
+    }
+
+    pub fn is_terminator(&self) -> bool {
+        matches!(self, Instruction::Jmp(_))
+    }
+
+    pub fn get_label_name(&self) -> Option<&String> {
+        match self {
+            Instruction::Label(name) => Some(name),
+            _ => None
+        }
+    }
 }

@@ -18,6 +18,7 @@ pub enum TokenKind {
     Div,
     Udiv,
     Call,
+    Jmp,
 
 // Types
     I32,
@@ -34,6 +35,7 @@ pub enum TokenKind {
 // Literals
     GlobSym,
     Vreg, 
+    Label,
     IntLit,
 
 // Sentinels
@@ -109,6 +111,7 @@ impl IrLexer {
             b"div" => TokenKind::Div,
             b"udiv" => TokenKind::Udiv,
             b"call" => TokenKind::Call,
+            b"jmp" => TokenKind::Jmp,
             _ => TokenKind::Error
         }
     }
@@ -175,6 +178,14 @@ impl IrLexer {
                 while !self.is_at_end() && self.is_alphanumeric() { self.cursor += 1; }
 
                 Token::new((start, self.cursor), TokenKind::Vreg)
+            }
+            b'#' => {
+                self.cursor += 1; // do not include the `#`
+                let start = self.cursor;
+
+                while !self.is_at_end() && self.is_alphanumeric() { self.cursor += 1; }
+
+                Token::new((start, self.cursor), TokenKind::Label)
             }
             b'-' => {
                 let start = self.cursor;

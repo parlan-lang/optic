@@ -173,6 +173,14 @@ impl IrParser {
         Instruction::Call { vreg, func, args, ty }
     }
 
+    fn parse_ins_jmp(&mut self) -> Instruction {
+        self.eat(TokenKind::Jmp);
+
+        let label = self.eat(TokenKind::Label);
+
+        Instruction::Jmp(self.src[label.get_span()].to_string())
+    }
+
     /// Parses an instruction
     /// 
     /// Panics
@@ -181,6 +189,11 @@ impl IrParser {
     fn parse_ins(&mut self) -> Instruction {
         match self.peek().kind {
             TokenKind::Ret => self.parse_ins_ret(),
+            TokenKind::Jmp => self.parse_ins_jmp(),
+            TokenKind::Label => {
+                let label = self.next();
+                Instruction::Label(self.src[label.get_span()].to_string())
+            },
             TokenKind::Vreg => {
                 let curr_tk = self.next(); // we already know this is Vreg
                 let vreg = self.next_vreg();

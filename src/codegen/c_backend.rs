@@ -63,6 +63,12 @@ impl<'a> CBackend<'a> {
                 writeln!(header, "  {} vreg_{};", self.compile_type(ty), *vreg);
                 writeln!(body, "  vreg_{} = ({}){}({});", *vreg, self.compile_type(ty), func, args);
             }
+            Instruction::Label(label) => {
+                writeln!(body, "L_{}:", label);
+            }
+            Instruction::Jmp(dest) => {
+                writeln!(body, "  goto L_{};", dest);
+            }
         }
     }
 
@@ -82,7 +88,7 @@ impl<'a> CBackend<'a> {
         let mut local_body = &mut BufWriter::new(Vec::new());
 
         for blk in &func.cfg.blocks {
-            writeln!(local_body, "BB_{}:", blk.id.0);
+            writeln!(local_body, "// BB_{}:", blk.id.0);
 
             for inst in &blk.instructions {
                 self.compile_inst(inst, global, header, local_body);
