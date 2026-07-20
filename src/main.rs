@@ -1,9 +1,10 @@
 mod ir;
 mod module;
 mod cfg;
+mod ssa;
 mod codegen;
 
-use std::time::Instant;
+use std::{collections::HashMap, time::Instant};
 
 fn main() {
     let mut input = "";
@@ -51,7 +52,29 @@ Options:
     module.build_cfg();
     let cfg_build_time = start.elapsed().as_secs_f32();
 
-    let mut codegen = codegen::c_backend::CBackend::new(output, &module);
+    for func in &mut module.functions {
+        ssa::builder::build_ssa(&mut func.cfg);
+    }
+
+    let mut vreg_aliases: HashMap<&String, ssa::VregAlias> = HashMap::new();
+    for func in &module.functions {
+        vreg_aliases.insert(&func.name, ssa::VregAlias::new());
+        let aliases = vreg_aliases.get_mut(&func.name).unwrap();
+        for ins in &func.body {
+            match ins {
+                module::instruction::Instruction::Phi { vreg, srcs, .. } => {
+                    for src in srcs {
+                        if let Some(src) = src.as_vreg() {
+                            aliases.union(*vreg, src);
+                        }
+                    }
+                }
+                _ => continue
+            }
+        }
+    }
+
+    let mut codegen = codegen::c_backend::CBackend::new(output, &module, vreg_aliases);
 
     start = Instant::now();
     codegen.compile();

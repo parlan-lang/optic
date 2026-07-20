@@ -8,7 +8,7 @@ pub mod builder;
 
 use crate::module::instruction::*;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct BlockId(pub usize);
 
 #[derive(Debug, Clone)]

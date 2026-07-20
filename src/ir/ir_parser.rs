@@ -196,8 +196,14 @@ impl IrParser {
             },
             TokenKind::Vreg => {
                 let curr_tk = self.next(); // we already know this is Vreg
-                let vreg = self.next_vreg();
-                self.local.insert(self.src[curr_tk.get_span()].to_string(), vreg);
+                let vreg_name = self.src[curr_tk.get_span()].to_string();
+                let mut vreg = 0;
+                if let Some(v) = self.local.get(&vreg_name) {
+                    vreg = *v;
+                } else {
+                    vreg = self.next_vreg();
+                    self.local.insert(vreg_name, vreg);
+                }
 
                 self.eat(TokenKind::Assing);
                 self.eat(TokenKind::Dot);

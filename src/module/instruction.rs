@@ -10,6 +10,21 @@ pub enum Value {
     Vreg(usize),
 }
 
+impl Value {
+    pub fn as_vreg(&self) -> Option<usize> {
+        match self {
+            Value::Vreg(id) => Some(*id),
+            Value::IntLit(_) => None
+        }
+    }
+
+    pub fn map_vreg(&mut self, mut f: impl FnMut(usize) -> usize) {
+        if let Value::Vreg(id) = self {
+            *id = f(*id);
+        }
+    }
+}
+
 /// The Type of an [`Instruction`]
 /// 
 /// Every [`Instruction`] have a type (e.g., [`Type::I32`]), and this enum represents all of the posible types
@@ -59,6 +74,11 @@ pub enum Instruction {
     },
     Label (String),
     Jmp (String),
+    Phi {
+        vreg: usize,
+        srcs: Vec<Value>,
+        ty: Type
+    }
 }
 
 impl Instruction {
