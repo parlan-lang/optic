@@ -6,6 +6,17 @@ mod codegen;
 
 use std::{collections::HashMap, time::Instant};
 
+// simple auxiliar function to format durations
+fn format_time(secs: f32, total: f32) -> String {
+    let abs_secs = secs.abs();
+    let format_sec = if abs_secs >= 1.0 { (secs, "sec") }
+                    else if abs_secs >= 1e-3 { (secs * 1_000.0, "ms") }
+                    else if abs_secs >= 1e-6 { (secs * 1_000_000.0, "µs") }
+                    else { (secs * 1_000_000_000.0, "ns") };
+    format!("{:>5.1} {} ({:>5.1}%)", format_sec.0, format_sec.1, (secs / total) * 100.0)
+    
+}
+
 fn main() {
     let mut input = "";
     let mut output = "";
@@ -52,10 +63,13 @@ Options:
     module.build_cfg();
     let cfg_build_time = start.elapsed().as_secs_f32();
 
+    start = Instant::now();
     for func in &mut module.functions {
         ssa::builder::build_ssa(&mut func.cfg);
     }
+    let ssa_con_time = start.elapsed().as_secs_f32();
 
+    start = Instant::now();
     let mut vreg_aliases: HashMap<&String, ssa::VregAlias> = HashMap::new();
     for func in &module.functions {
         vreg_aliases.insert(&func.name, ssa::VregAlias::new());
@@ -70,6 +84,7 @@ Options:
             }
         }
     }
+    let ssa_decon_time = start.elapsed().as_secs_f32();
 
     let mut codegen = codegen::c_backend::CBackend::new(output, &module, vreg_aliases);
 
@@ -77,21 +92,25 @@ Options:
     codegen.compile();
     let codegen_time = start.elapsed().as_secs_f32();
 
-    let total_time = parse_time + cfg_build_time + codegen_time;
+    let total_time = parse_time + cfg_build_time + ssa_con_time + ssa_decon_time + codegen_time;
 
     if time_report {
         println!(
-            r#"--- Optic Time Report ---
-
-Parsing ..... {:.5}s ({:.1}%)
-CFG build ... {:.5}s ({:.1}%)
-Codegen ..... {:.5}s ({:.1}%)
+            r#"
+----- Optic Time Report -----
+Parsing .............. {}
+CFG build ............ {}
+SSA construction ..... {}
+SSA deconstruction ... {}
+Codegen .............. {}
 -----------------------------
 Total Time:   {:.5}s
 "#,
-            parse_time, (parse_time / total_time) * 100.0,
-            cfg_build_time, (cfg_build_time / total_time) * 100.0,
-            codegen_time, (codegen_time / total_time) * 100.0,
+            format_time(parse_time, total_time),
+            format_time(cfg_build_time, total_time),
+            format_time(ssa_con_time, total_time),
+            format_time(ssa_decon_time, total_time),
+            format_time(codegen_time, total_time),
             total_time
         );
     }
