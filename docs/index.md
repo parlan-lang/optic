@@ -68,3 +68,19 @@ This is a list of all instructions, its mnemonics, syntax, description and an ex
 | `udiv` | `udiv VALUE, VALUE` | divides two integer values (unsigned) | `%r =.i32 udiv 2, 2` |
 | `call` | `call FUNC(VALUES,...)` | calls a function with the specified arguments | `%r =.i32 call @add(2, 2)` |
 | `jmp` | `jmp LABEL` | jumps inconditionaly to a label | `jmp #end` |
+| `br` | `br VREG, LABEL, LABEL` | jumps conditionaly to a label or another based on the value on the register | `br %cond, #then, #else` |
+
+#### `cmp` instruction family
+
+The `cmp` instruction is a special case, because is not a single instruction, it's a "family of instructions".
+
+All of them return a boolean value of type `i1`, and has a special syntax: `cmp.KIND.TYPE VALUE, VALUE`, where `TYPE` is the type of the values. these are the possible `KIND`s of comparitions:
+
+| Kind | Meaning |
+| :-- | :-- |
+| `eq` | equal to |
+| `ne` | not equal to |
+| `slt`/`ult` | signed/unsigned less than |
+| `sgt`/`ugt` | signed/unsigned greater than |
+
+This is a simple example: `%r =.i1 cmp.eq.i32 %x, 5`
