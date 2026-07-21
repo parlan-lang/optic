@@ -105,6 +105,7 @@ impl IrParser {
     fn parse_type(&mut self) -> Type {
         match self.next().kind {
             TokenKind::I32 => Type::I32,
+            TokenKind::I1 => Type::I1,
             _ => {
                 eprintln!("error: expected a type, found {:?} instead", self.peek().kind);
                 panic!()
@@ -134,12 +135,28 @@ impl IrParser {
     }
 
     fn parse_ins_op(&mut self, vreg: usize, ty: Type) -> Instruction {
+        let mut val_ty: Option<Type> = None;
         let kind = match self.next().kind {
             TokenKind::Add => OpKind::Add,
             TokenKind::Sub => OpKind::Sub,
             TokenKind::Mul => OpKind::Mul,
             TokenKind::Div => OpKind::Div,
             TokenKind::Udiv => OpKind::Udiv,
+            TokenKind::Cmp => {
+                self.eat(TokenKind::Dot);
+                let cmp_kind = match self.next().kind {
+                    TokenKind::Eq => OpKind::CmpEq,
+                    TokenKind::Ne => OpKind::CmpNe,
+                    TokenKind::Slt => OpKind::CmpSlt,
+                    TokenKind::Ult => OpKind::CmpUlt,
+                    TokenKind::Sgt => OpKind::CmpSgt,
+                    TokenKind::Ugt => OpKind::CmpUgt,
+                    _ => panic!()
+                };
+                self.eat(TokenKind::Dot);
+                val_ty = Some(self.parse_type());
+                cmp_kind
+            }
             _ => panic!()
         };
 
@@ -147,7 +164,7 @@ impl IrParser {
         self.eat(TokenKind::Comma);
         let rhs = self.parse_value();
 
-        Instruction::Op { vreg, kind, lhs, rhs, ty }
+        Instruction::Op { vreg, kind, lhs, rhs, ty, val_ty }
     }
 
     fn parse_ins_call(&mut self, vreg: usize, ty: Type) -> Instruction {
@@ -181,6 +198,19 @@ impl IrParser {
         Instruction::Jmp(self.src[label.get_span()].to_string())
     }
 
+    fn parse_ins_br(&mut self) -> Instruction {
+        self.eat(TokenKind::Br);
+
+        let cond = self.parse_value();
+
+        self.eat(TokenKind::Comma);
+        let true_br = self.eat(TokenKind::Label);
+        self.eat(TokenKind::Comma);
+        let false_br = self.eat(TokenKind::Label);
+
+        Instruction::Br { cond, true_br: self.src[true_br.get_span()].to_string(), false_br: self.src[false_br.get_span()].to_string() }
+    }
+
     /// Parses an instruction
     /// 
     /// Panics
@@ -190,6 +220,7 @@ impl IrParser {
         match self.peek().kind {
             TokenKind::Ret => self.parse_ins_ret(),
             TokenKind::Jmp => self.parse_ins_jmp(),
+            TokenKind::Br => self.parse_ins_br(),
             TokenKind::Label => {
                 let label = self.next();
                 Instruction::Label(self.src[label.get_span()].to_string())
@@ -213,7 +244,8 @@ impl IrParser {
                     TokenKind::Copy => self.parse_ins_copy(vreg, ty),
                     TokenKind::Call => self.parse_ins_call(vreg, ty),
                     TokenKind::Add | TokenKind::Sub |
-                    TokenKind::Mul | TokenKind::Div => self.parse_ins_op(vreg, ty),
+                    TokenKind::Mul | TokenKind::Div |
+                    TokenKind::Cmp => self.parse_ins_op(vreg, ty),
                     _ => {
                         eprintln!("error: expected an instruction, found {:?} instead", self.peek().kind);
                         panic!()

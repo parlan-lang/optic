@@ -59,17 +59,14 @@ Options:
     let mut vreg_aliases: HashMap<&String, ssa::VregAlias> = HashMap::new();
     for func in &module.functions {
         vreg_aliases.insert(&func.name, ssa::VregAlias::new());
-        let aliases = vreg_aliases.get_mut(&func.name).unwrap();
-        for ins in &func.body {
-            match ins {
-                module::instruction::Instruction::Phi { vreg, srcs, .. } => {
-                    for src in srcs {
-                        if let Some(src) = src.as_vreg() {
-                            aliases.union(*vreg, src);
-                        }
+        for blk in &func.cfg.blocks {
+            for ins in &blk.instructions {
+                match ins {
+                    module::instruction::Instruction::Phi { vreg, srcs, .. } => {
+                        srcs.iter().for_each(|v| vreg_aliases.get_mut(&func.name).unwrap().union(*vreg, v.as_vreg().unwrap()));
                     }
+                    _ => continue
                 }
-                _ => continue
             }
         }
     }

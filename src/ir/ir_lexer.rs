@@ -19,9 +19,15 @@ pub enum TokenKind {
     Udiv,
     Call,
     Jmp,
+    Cmp,
+    Eq, Ne,
+    Slt, Ult,
+    Sgt, Ugt,
+    Br,
 
 // Types
     I32,
+    I1,
 
 // Delimiters
     Dot,
@@ -103,6 +109,7 @@ impl IrLexer {
         match &self.source[start as usize..self.cursor as usize] {
             b"ret" => TokenKind::Ret,
             b"i32" => TokenKind::I32,
+            b"i1" => TokenKind::I1,
             b"define" => TokenKind::Define,
             b"copy" => TokenKind::Copy,
             b"add" => TokenKind::Add,
@@ -112,6 +119,11 @@ impl IrLexer {
             b"udiv" => TokenKind::Udiv,
             b"call" => TokenKind::Call,
             b"jmp" => TokenKind::Jmp,
+            b"cmp" => TokenKind::Cmp,
+            b"eq" => TokenKind::Eq, b"ne" => TokenKind::Ne,
+            b"slt" => TokenKind::Slt, b"ult" => TokenKind::Ult,
+            b"sgt" => TokenKind::Sgt, b"ugt" => TokenKind::Ugt,
+            b"br" => TokenKind::Br,
             _ => TokenKind::Error
         }
     }

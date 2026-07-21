@@ -32,6 +32,7 @@ impl Value {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Type {
     I32,
+    I1,
 }
 
 /// The kind of a binary or boolean operation 
@@ -42,6 +43,9 @@ pub enum OpKind {
     Mul,
     Div,
     Udiv,
+    CmpEq, CmpNe,
+    CmpSlt, CmpUlt,
+    CmpSgt, CmpUgt,
 }
 
 /// Represents a single instruction and its data
@@ -64,7 +68,8 @@ pub enum Instruction {
         kind: OpKind,
         lhs: Value,
         rhs: Value,
-        ty: Type
+        ty: Type,
+        val_ty: Option<Type>
     },
     Call {
         vreg: usize,
@@ -74,6 +79,11 @@ pub enum Instruction {
     },
     Label (String),
     Jmp (String),
+    Br {
+        cond: Value,
+        true_br: String,
+        false_br: String
+    },
     Phi {
         vreg: usize,
         srcs: Vec<Value>,

@@ -3,7 +3,7 @@
 #![allow(unused)]
 
 use std::fs::File;
-use std::io::{BufWriter, Write};
+use std::io::{BufRead, BufWriter, Write};
 use std::collections::HashMap;
 
 use crate::module::{
@@ -31,7 +31,8 @@ impl<'a> CBackend<'a> {
 
     fn compile_type(&self, ty: &Type) -> &str {
         match ty {
-            Type::I32 => "uint32_t"
+            Type::I32 => "uint32_t",
+            Type::I1 => "uint8_t",
         }
     }
 
@@ -55,15 +56,21 @@ impl<'a> CBackend<'a> {
                 writeln!(body, "  return ({}){};", self.compile_type(ty), self.compile_value(val, aliases));
             },
             Instruction::Copy { vreg, val, ty } => {
-                writeln!(header, "  {} vreg_{};", self.compile_type(ty), aliases.find(*vreg));
-                writeln!(body, "  vreg_{} = ({}){};", *vreg, self.compile_type(ty), self.compile_value(val, aliases));
+                let def = format!("  {} vreg_{};", self.compile_type(ty), aliases.find(*vreg));
+                if !header.buffer().lines().any(|l| l.unwrap() == def) {
+                    writeln!(header, "{}", def);
+                }
+                writeln!(body, "  vreg_{} = ({}){};", aliases.find(*vreg), self.compile_type(ty), self.compile_value(val, aliases));
             }
-            Instruction::Op { vreg, kind, lhs, rhs, ty } => {
+            Instruction::Op { vreg, kind, lhs, rhs, ty, .. } => {
                 let op = match kind {
                     OpKind::Add => "+",
                     OpKind::Sub => "-",
                     OpKind::Mul => "*",
                     OpKind::Div | OpKind::Udiv => "/",
+                    OpKind::CmpEq => "==", OpKind::CmpNe => "!=",
+                    OpKind::CmpSlt | OpKind::CmpUlt => "<",
+                    OpKind::CmpSgt | OpKind::CmpUgt => ">",
                 };
 
                 writeln!(header, "  {} vreg_{};", self.compile_type(ty), aliases.find(*vreg));
@@ -80,6 +87,9 @@ impl<'a> CBackend<'a> {
             }
             Instruction::Jmp(dest) => {
                 writeln!(body, "  goto L_{};", dest);
+            }
+            Instruction::Br { cond, true_br, false_br } => {
+                writeln!(body, "  if ({}) goto L_{}; else goto L_{};", self.compile_value(cond, aliases), true_br, false_br);
             }
             Instruction::Phi { vreg, srcs, ty } => {}
         }

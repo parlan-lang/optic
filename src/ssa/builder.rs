@@ -190,6 +190,12 @@ pub fn build_ssa(cfg: &mut ControlFlowGraph) {
                     builder.write_variable(block_id,Vreg(*vreg),ssa_id);
                     *vreg = ssa_id.0;
                 }
+                Instruction::Br { cond, .. } => {
+                    if let Some(vreg_id) = cond.as_vreg() {
+                        let ssa_id = builder.read_variable(backward_edges, block_id, Vreg(vreg_id));
+                        *cond = Value::Vreg(ssa_id.0);
+                    }
+                }
                 Instruction::Label(_) | Instruction::Jmp(_) | Instruction::Phi { .. } => {}
             }
         }
@@ -233,6 +239,7 @@ pub fn build_ssa(cfg: &mut ControlFlowGraph) {
                 Instruction::Call { args, ..} => for arg in args { resolve_use(arg); },
                 Instruction::Phi { srcs, .. } => for src in srcs { resolve_use(src); },
                 Instruction::Label(_) | Instruction::Jmp(_) => {}
+                Instruction::Br { cond, .. } => resolve_use(cond),
             }
         }
     }

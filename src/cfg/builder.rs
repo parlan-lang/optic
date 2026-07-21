@@ -86,6 +86,12 @@ impl<'a> CfgBuilder<'a> {
                             cfg.add_edge(block_id, dest_id);
                         }
                     }
+                    Instruction::Br { true_br, false_br, .. } => {
+                        if let (Some(&true_id), Some(&false_id)) = (label_map.get(true_br), label_map.get(false_br)) {
+                            cfg.add_edge(block_id, true_id);
+                            cfg.add_edge(block_id, false_id);
+                        }
+                    }
                     _ => {}
                 }
             }
