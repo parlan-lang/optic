@@ -1,6 +1,6 @@
 # Optic's IR Documentation
 
-This is the official documentation of Optic's IR, here you will find a extensive especification of every single instruction that the last version of Optic support, which is `0.2.x`
+This is the official documentation of Optic's IR, here you will find a extensive especification of every single instruction that the last version of Optic support, which is `0.13.x`
 
 > [!NOTE]
 > Currently, Optic is under active, early-stage development, this mean the IR can change dramatically between diferent versions.  
