@@ -9,7 +9,8 @@ use crate::cfg::*;
 #[derive(Debug, Clone)]
 pub struct Parameter {
     pub vreg: usize,
-    pub ty: Type
+    pub ty: Type,
+    pub is_vaarg: bool,
 }
 
 /// Represents a function

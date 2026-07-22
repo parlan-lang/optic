@@ -283,15 +283,22 @@ impl IrParser {
             let param = self.eat(TokenKind::Vreg);
             let vreg = self.next_vreg();
             let ty = self.parse_type();
-            params.push(Parameter { vreg, ty });
+            params.push(Parameter { vreg, ty, is_vaarg: false });
             self.local.insert(self.src[param.get_span()].to_string(), vreg);
 
             while self.peek().kind == TokenKind::Comma {
                 self.eat(TokenKind::Comma);
+
+                if self.peek().kind == TokenKind::Dots {
+                    self.eat(TokenKind::Dots);
+                    params.push(Parameter { vreg: 0, ty: Type::I1, is_vaarg: true }); // i chosed Type::I1 as the default, but it will be never be readed
+                    break; // it must be the last argument
+                }
+
                 let param = self.eat(TokenKind::Vreg);
                 let vreg = self.next_vreg();
                 let ty = self.parse_type();
-                params.push(Parameter { vreg, ty });
+                params.push(Parameter { vreg, ty, is_vaarg: false });
                 self.local.insert(self.src[param.get_span()].to_string(), vreg);
             }
         }

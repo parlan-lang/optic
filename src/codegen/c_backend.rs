@@ -100,7 +100,8 @@ impl<'a> CBackend<'a> {
         let mut aliases = binding.get_mut(&func.name);
         
         let params = func.params.iter().map(|p| {
-            format!("{} vreg_{}", self.compile_type(&p.ty), p.vreg)
+            if p.is_vaarg { "...".to_string() }
+            else { format!("{} vreg_{}", self.compile_type(&p.ty), p.vreg) }
         }).collect::<Vec<String>>().join(", ");
 
         if func.is_extern {

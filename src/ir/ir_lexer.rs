@@ -32,6 +32,7 @@ pub enum TokenKind {
 
 // Delimiters
     Dot,
+    Dots, 
     Comma,
     Lparen,
     Rparen,
@@ -151,6 +152,10 @@ impl IrLexer {
         match self.peek() {
             b'.' => {
                 self.cursor += 1;
+                if &self.source[self.cursor as usize..self.cursor as usize + 2] == b".." {
+                    self.cursor += 2;
+                    return Token::new((self.cursor - 3, self.cursor), TokenKind::Dots)
+                }
                 Token::new((self.cursor - 1, self.cursor), TokenKind::Dot)
             }
             b',' => {
