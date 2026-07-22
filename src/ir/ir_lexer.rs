@@ -11,6 +11,7 @@ pub enum TokenKind {
 // Keywords
     Ret,
     Define,
+    Extern,
     Copy,
     Add,
     Sub,
@@ -111,6 +112,7 @@ impl IrLexer {
             b"i32" => TokenKind::I32,
             b"i1" => TokenKind::I1,
             b"define" => TokenKind::Define,
+            b"extern" => TokenKind::Extern,
             b"copy" => TokenKind::Copy,
             b"add" => TokenKind::Add,
             b"sub" => TokenKind::Sub,

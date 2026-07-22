@@ -265,6 +265,13 @@ impl IrParser {
 
         self.eat(TokenKind::Define);
 
+        let is_extern = if self.peek().kind == TokenKind::Extern {
+            self.next();
+            true
+        } else {
+            false
+        };
+
         let name_span = self.eat(TokenKind::GlobSym).get_span();
         let name = self.src[name_span].to_string();
 
@@ -293,6 +300,10 @@ impl IrParser {
 
         let ty = self.parse_type();
 
+        if is_extern {
+            return Function { name, params, ty, body: Vec::new(), cfg: ControlFlowGraph::new(), is_extern }
+        }
+
         self.eat(TokenKind::Lbrace);
 
         let mut body = Vec::new();
@@ -305,7 +316,7 @@ impl IrParser {
 
         self.curr_vreg = curr_vreg; // reset the virtual registers
         
-        Function { name, params, ty, body, cfg: ControlFlowGraph::new() }
+        Function { name, params, ty, body, cfg: ControlFlowGraph::new(), is_extern }
     }
 
     /// Parses a module

@@ -103,6 +103,15 @@ impl<'a> CBackend<'a> {
             format!("{} vreg_{}", self.compile_type(&p.ty), p.vreg)
         }).collect::<Vec<String>>().join(", ");
 
+        if func.is_extern {
+            writeln!(
+                body, "\nextern {} {}({});",
+                self.compile_type(&func.ty),
+                func.name,
+                params
+            );
+            return;
+        }
         writeln!(
             body, "\n{} {}({}) {{", 
             self.compile_type(&func.ty), 

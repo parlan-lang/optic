@@ -65,13 +65,18 @@ Options:
 
     start = Instant::now();
     for func in &mut module.functions {
-        ssa::builder::build_ssa(&mut func.cfg);
+        // extern functions doesn't have a body
+        if !func.is_extern {
+            ssa::builder::build_ssa(&mut func.cfg);
+        }
     }
     let ssa_con_time = start.elapsed().as_secs_f32();
 
     start = Instant::now();
     let mut vreg_aliases: HashMap<&String, ssa::VregAlias> = HashMap::new();
     for func in &module.functions {
+        if func.is_extern { continue; }
+
         vreg_aliases.insert(&func.name, ssa::VregAlias::new());
         for blk in &func.cfg.blocks {
             for ins in &blk.instructions {

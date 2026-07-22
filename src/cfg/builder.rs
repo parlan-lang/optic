@@ -21,6 +21,11 @@ impl<'a> CfgBuilder<'a> {
     }
 
     pub fn build_cfg(&mut self) {
+        // external functions doesn't have a body, so trying to construct a CFG will be useless
+        if self.func.is_extern {
+            return;
+        }
+
         // take the instructions out of the body
         let instructions = std::mem::take(&mut self.func.body);
 

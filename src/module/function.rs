@@ -22,5 +22,6 @@ pub struct Function {
     pub params: Vec<Parameter>,
     pub ty: Type,
     pub body: Vec<Instruction>,
-    pub cfg: ControlFlowGraph
+    pub cfg: ControlFlowGraph,
+    pub is_extern: bool,
 }
