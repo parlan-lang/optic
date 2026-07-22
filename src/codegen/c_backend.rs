@@ -33,6 +33,7 @@ impl<'a> CBackend<'a> {
         match ty {
             Type::I32 => "uint32_t",
             Type::I1 => "uint8_t",
+            Type::Ptr => "void*",
         }
     }
 

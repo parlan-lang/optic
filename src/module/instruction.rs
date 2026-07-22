@@ -33,6 +33,7 @@ impl Value {
 pub enum Type {
     I32,
     I1,
+    Ptr,
 }
 
 /// The kind of a binary or boolean operation 

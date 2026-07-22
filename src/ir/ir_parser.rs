@@ -106,6 +106,7 @@ impl IrParser {
         match self.next().kind {
             TokenKind::I32 => Type::I32,
             TokenKind::I1 => Type::I1,
+            TokenKind::Ptr => Type::Ptr,
             _ => {
                 eprintln!("error: expected a type, found {:?} instead", self.peek().kind);
                 panic!()
