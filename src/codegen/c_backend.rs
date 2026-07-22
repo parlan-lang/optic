@@ -34,6 +34,7 @@ impl<'a> CBackend<'a> {
             Type::I32 => "uint32_t",
             Type::I1 => "uint8_t",
             Type::Ptr => "void*",
+            Type::Str => "char*",
         }
     }
 
@@ -41,6 +42,7 @@ impl<'a> CBackend<'a> {
         match val {
             Value::IntLit(i) => format!("{}", i),
             Value::Vreg(v) => format!("vreg_{}", aliases.find(*v)),
+            Value::GlobSym(s) => format!("glob_{}", s),
         }
     }
 
@@ -137,6 +139,20 @@ impl<'a> CBackend<'a> {
         writeln!(body, "}}");
     }
 
+    fn compile_global(&mut self, data: &GlobData, global: &mut BufWriter<Vec<u8>>) {
+        if data.is_constant {
+            write!(global, "const ");
+        }
+        match &data.val {
+            GlobValue::Int(n) => {
+                writeln!(global, "{} glob_{} = {};", self.compile_type(&data.ty), data.name, n);
+            }
+            GlobValue::Str(s) => {
+                writeln!(global, "{} glob_{} = \"{}\";", self.compile_type(&data.ty), data.name, s);
+            }
+        }
+    }
+
     pub fn compile(&mut self) {
         let mut header = BufWriter::new(Vec::new());
         let mut body = BufWriter::new(Vec::new());
@@ -147,6 +163,10 @@ impl<'a> CBackend<'a> {
             self.module.name
         );
         
+        for global in &self.module.globals {
+            self.compile_global(global, &mut header);
+        }
+
         for func in &self.module.functions {
             self.compile_func(func, &mut header, &mut body);
         }

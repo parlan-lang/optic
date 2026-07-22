@@ -8,13 +8,14 @@
 pub enum Value {
     IntLit(usize),
     Vreg(usize),
+    GlobSym(String),
 }
 
 impl Value {
     pub fn as_vreg(&self) -> Option<usize> {
         match self {
             Value::Vreg(id) => Some(*id),
-            Value::IntLit(_) => None
+            Value::IntLit(_) | Value::GlobSym(_) => None
         }
     }
 
@@ -34,6 +35,7 @@ pub enum Type {
     I32,
     I1,
     Ptr,
+    Str,
 }
 
 /// The kind of a binary or boolean operation 
@@ -107,4 +109,20 @@ impl Instruction {
             _ => None
         }
     }
+}
+
+/// Represents a global value used to initialize a `data` instruction
+#[derive(Debug, Clone)]
+pub enum GlobValue {
+    Int(usize),
+    Str(String),
+}
+
+/// Represents a global data (the `data` instruction)
+#[derive(Debug, Clone)]
+pub struct GlobData {
+    pub name: String,
+    pub ty: Type,
+    pub val: GlobValue,
+    pub is_constant: bool,
 }

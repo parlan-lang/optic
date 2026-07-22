@@ -18,6 +18,7 @@ pub mod function;
 #[derive(Debug, Clone)]
 pub struct Module {
     pub name: String,
+    pub globals: Vec<instruction::GlobData>,
     pub functions: Vec<function::Function>
 }
 

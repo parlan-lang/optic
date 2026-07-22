@@ -5,6 +5,7 @@
 use std::collections::HashMap;
 
 use crate::ir::ir_lexer::*;
+use crate::module::instruction::Value::GlobSym;
 use crate::module::{
     Module, 
     instruction::*, 
@@ -90,6 +91,11 @@ impl IrParser {
                     }
                 }
             }
+            TokenKind::GlobSym => {
+                let name = &self.src[tk.get_span()];
+
+                GlobSym(name.to_string())
+            }
             _ => {
                 eprintln!("error: expected a value, found {:?} instead", tk.kind);
                 panic!()
@@ -107,6 +113,7 @@ impl IrParser {
             TokenKind::I32 => Type::I32,
             TokenKind::I1 => Type::I1,
             TokenKind::Ptr => Type::Ptr,
+            TokenKind::Str => Type::Str,
             _ => {
                 eprintln!("error: expected a type, found {:?} instead", self.peek().kind);
                 panic!()
@@ -327,17 +334,60 @@ impl IrParser {
         Function { name, params, ty, body, cfg: ControlFlowGraph::new(), is_extern }
     }
 
+    fn parse_global_value(&mut self) -> GlobValue {
+        let tk = self.next();
+        match tk.kind {
+            TokenKind::IntLit => GlobValue::Int(self.src[tk.get_span()].parse().unwrap()),
+            TokenKind::StrLit => GlobValue::Str(self.src[tk.get_span()].to_string()),
+            _ => {
+                eprintln!("error: expected a number or string literal");
+                panic!()
+            }
+        }
+    }
+
+    fn parse_global(&mut self) -> GlobData {
+        self.eat(TokenKind::Data);
+
+        let is_constant = if self.peek().kind == TokenKind::Constant {
+            self.next();
+            true
+        } else {
+            false
+        };
+
+        let name_tk = self.eat(TokenKind::GlobSym);
+        let name = self.src[name_tk.get_span()].to_string();
+
+        self.eat(TokenKind::Assing);
+        self.eat(TokenKind::Dot);
+        let ty = self.parse_type();
+
+        let val = self.parse_global_value();
+
+        GlobData { name, ty, val, is_constant }
+    }
+
     /// Parses a module
     pub fn parse_module(&mut self, name: &str) -> Module {
         let mut functions = Vec::new();
+        let mut globals = Vec::new();
 
         while self.peek().kind != TokenKind::Eof {
-            functions.push(self.parse_function());
+            match self.peek().kind {
+                TokenKind::Data => globals.push(self.parse_global()),
+                TokenKind::Define => functions.push(self.parse_function()),
+                _ => {
+                    eprintln!("error: expected `define` or `data`, found {:?}", self.peek());
+                    panic!();
+                }
+            }
         }
 
         Module {
             name: name.to_string(),
-            functions
+            functions,
+            globals
         }
     }
 }

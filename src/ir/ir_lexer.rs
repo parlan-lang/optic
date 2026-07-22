@@ -25,11 +25,14 @@ pub enum TokenKind {
     Slt, Ult,
     Sgt, Ugt,
     Br,
+    Data,
+    Constant,
 
 // Types
     I32,
     I1,
     Ptr,
+    Str,
 
 // Delimiters
     Dot,
@@ -46,6 +49,7 @@ pub enum TokenKind {
     Vreg, 
     Label,
     IntLit,
+    StrLit,
 
 // Sentinels
     Eof,
@@ -114,6 +118,7 @@ impl IrLexer {
             b"i32" => TokenKind::I32,
             b"i1" => TokenKind::I1,
             b"ptr" => TokenKind::Ptr,
+            b"str" => TokenKind::Str,
             b"define" => TokenKind::Define,
             b"extern" => TokenKind::Extern,
             b"copy" => TokenKind::Copy,
@@ -129,6 +134,8 @@ impl IrLexer {
             b"slt" => TokenKind::Slt, b"ult" => TokenKind::Ult,
             b"sgt" => TokenKind::Sgt, b"ugt" => TokenKind::Ugt,
             b"br" => TokenKind::Br,
+            b"data" => TokenKind::Data,
+            b"constant" => TokenKind::Constant,
             _ => TokenKind::Error
         }
     }
@@ -183,6 +190,15 @@ impl IrLexer {
             b'=' => {
                 self.cursor += 1;
                 Token::new((self.cursor - 1, self.cursor), TokenKind::Assing)
+            }
+            b'"' => {
+                self.cursor += 1;
+                let start = self.cursor;
+
+                while !self.is_at_end() && self.peek() != b'"' { self.cursor += 1; }
+                self.cursor += 1;
+
+                Token::new((start, self.cursor - 1), TokenKind::StrLit)
             }
             b'@' => {
                 self.cursor += 1; // do not include the `@`
