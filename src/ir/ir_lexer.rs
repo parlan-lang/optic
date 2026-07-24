@@ -151,6 +151,10 @@ impl IrLexer {
                self.peek() == b'\n' ||
                self.peek() == b'\r' ||
                self.peek() == b'\t' { self.cursor += 1; continue; }
+            else if &self.source[self.cursor as usize..self.cursor as usize + 2] == b"//" {
+                while !self.is_at_end() && self.peek() != b'\n' { self.cursor += 1; }
+                continue;
+            }
             break;
         }
 
