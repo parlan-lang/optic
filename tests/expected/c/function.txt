@@ -1,0 +1,16 @@
+// Module "tests/samples/function.opt"
+#include <stdint.h>
+
+uint32_t square(uint32_t vreg_0) {
+  uint32_t vreg_1;
+// BB_0:
+  vreg_1 = (uint32_t)(vreg_0 * vreg_0);
+  return (uint32_t)vreg_1;
+}
+
+uint32_t main() {
+  uint32_t vreg_0;
+// BB_0:
+  vreg_0 = (uint32_t)square(2);
+  return (uint32_t)vreg_0;
+}

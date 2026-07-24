@@ -1,0 +1,9 @@
+data @msg =.str "Hello World!\0"
+
+define extern @printf(%fmt ptr, ...) i32
+
+define @main() i32 {
+    %0 =.i32 call @printf(@msg)
+    
+    ret.i32 0
+}

@@ -1,0 +1,15 @@
+// Module "tests/samples/extern.opt"
+#include <stdint.h>
+
+extern uint32_t add(uint32_t vreg_0, uint32_t vreg_1);
+
+extern uint32_t sub(uint32_t vreg_2, uint32_t vreg_3);
+
+uint32_t main() {
+  uint32_t vreg_0;
+  uint32_t vreg_1;
+// BB_0:
+  vreg_0 = (uint32_t)add(2,2);
+  vreg_1 = (uint32_t)sub(vreg_0,vreg_0);
+  return (uint32_t)vreg_1;
+}

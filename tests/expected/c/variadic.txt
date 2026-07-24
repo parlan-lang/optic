@@ -1,0 +1,12 @@
+// Module "tests/samples/variadic.opt"
+#include <stdint.h>
+char* glob_msg = "Hello World!\0";
+
+extern uint32_t printf(void* vreg_0, ...);
+
+uint32_t main() {
+  uint32_t vreg_0;
+// BB_0:
+  vreg_0 = (uint32_t)printf(glob_msg);
+  return (uint32_t)0;
+}

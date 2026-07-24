@@ -1,0 +1,7 @@
+// Module "tests/samples/simple.opt"
+#include <stdint.h>
+
+uint32_t main() {
+// BB_0:
+  return (uint32_t)42;
+}

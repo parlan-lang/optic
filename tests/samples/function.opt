@@ -1,0 +1,9 @@
+define @square(%n i32) i32 {
+    %0 =.i32 mul %n, %n
+    ret.i32 %0
+}
+
+define @main() i32 {
+    %0 =.i32 call @square(2)
+    ret.i32 %0
+}

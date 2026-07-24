@@ -1,0 +1,8 @@
+define extern @add(%n i32, %m i32) i32
+define extern @sub(%n i32, %m i32) i32
+
+define @main() i32 {
+    %0 =.i32 call @add(2, 2)
+    %1 =.i32 call @sub(%0, %0)
+    ret.i32 %1
+}
