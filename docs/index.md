@@ -1,14 +1,26 @@
 # Optic's IR Documentation
 
-This is the official documentation of Optic's IR, here you will find a extensive especification of every single instruction that the last version of Optic support, which is `0.13.x`
+This is the official documentation of Optic's IR, here you will find a extensive especification of every you need to know about it.
+
+## Table Of Contents
+
+- [Global Symbols & Virtual Registers](#global-symbols--virtual-registers)
+- [Type System](#type-system)
+- [Functions](#functions)
+  - [External Functions](#external-functions)
+  - [Variadic Functions](#variadic-functions)
+- [Instructions, Globals & Values](#instructions-globals--values)
+  - [Values](#values)
+  - [Instructions](#instructions)
+  - [Globals](#globals)
+
 
 > [!NOTE]
-> Currently, Optic is under active, early-stage development, this mean the IR can change dramatically between diferent versions.  
-> Also, not all updates changes this docs, some updates may only change something internal related to the pipeline or the CLI, but not the IR 
+> Currently, Optic is under active, early-stage development, this mean the IR can change dramatically between diferent versions.
 
 ## Global Symbols & Virtual Registers
 
-A global symbol is one that can be accessed from anywhere from the current module, these always start with `@`. A global symbol can be a variable or a global variable.
+A global symbol is one that can be accessed from anywhere from the current module, these always start with `@`. A global symbol can be a function or a global variable.
 
 A virtual register is what in high-level languages is called a variable, these always start with `%`. you can define an infinite number of virtual registers, and unlike other IRs (such as LLVM's) Optic's IR *is not* in SSA (Static Single Assignment) form, this means you can reassing a virtual register anytime.
 
@@ -34,7 +46,23 @@ define @main() i32 {
 }
 ```
 
-## Instructions & Values
+### External Functions
+
+You can define an external function using `extern`, for example:
+
+```
+define extern @printf(%fmt ptr, ...) i32
+```
+
+An external function is a function which body *is not defined in the current file*. An external function cannot have a body, because it is supposed to be defined somewhere else.
+
+### Variadic Functions
+
+You can define a function that takes a variadic number of arguments using `...` as the last parameter. 
+
+Currently, there's no way to manage these arguments, so the only place where variadic functions are useful is in external functions, like `printf`.
+
+## Instructions, Globals & Values
 
 ### Values
 
@@ -84,3 +112,13 @@ All of them return a boolean value of type `i1`, and has a special syntax: `cmp.
 | `sgt`/`ugt` | signed/unsigned greater than |
 
 This is a simple example: `%r =.i1 cmp.eq.i32 %x, 5`
+
+### Globals
+
+You can define a global variable using the `data` instruction. this is an example:
+
+```
+data @msg =.str "Hello, World!\0"
+```
+
+A global variable can have any value that can be know at compile-time, like a number or a literal string. Currently there is a string type, but it may be removed later
