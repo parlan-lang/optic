@@ -2,6 +2,7 @@
 
 #![allow(unused)]
 
+use std::fmt::format;
 use std::fs::File;
 use std::io::{BufRead, BufWriter, Write};
 use std::collections::HashMap;
@@ -33,6 +34,7 @@ impl<'a> CBackend<'a> {
         match ty {
             Type::I32 => "uint32_t",
             Type::I1 => "uint8_t",
+            Type::F32 => "float", // `float` is almost always of 4 bytes (32 bits)
             Type::Ptr => "void*",
             Type::Str => "char*",
         }
@@ -41,6 +43,7 @@ impl<'a> CBackend<'a> {
     fn compile_value(&self, val: &Value, aliases: &mut VregAlias) -> String {
         match val {
             Value::IntLit(i) => format!("{}", i),
+            Value::FloatLit(f) => format!("{}", f),
             Value::Vreg(v) => format!("vreg_{}", aliases.find(*v)),
             Value::GlobSym(s) => format!("glob_{}", s),
         }

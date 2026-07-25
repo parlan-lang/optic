@@ -80,6 +80,10 @@ impl IrParser {
 
                 Value::IntLit(n.parse().unwrap())
             }
+            TokenKind::FloatLit => {
+                let n = &self.src[tk.get_span()];
+                Value::FloatLit(n.parse().unwrap())
+            }
             TokenKind::Vreg => {
                 let vreg = &self.src[tk.get_span()];
 
@@ -112,6 +116,7 @@ impl IrParser {
         match self.next().kind {
             TokenKind::I32 => Type::I32,
             TokenKind::I1 => Type::I1,
+            TokenKind::F32 => Type::F32,
             TokenKind::Ptr => Type::Ptr,
             TokenKind::Str => Type::Str,
             _ => {

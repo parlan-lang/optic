@@ -31,6 +31,7 @@ pub enum TokenKind {
 // Types
     I32,
     I1,
+    F32,
     Ptr,
     Str,
 
@@ -49,6 +50,7 @@ pub enum TokenKind {
     Vreg, 
     Label,
     IntLit,
+    FloatLit,
     StrLit,
 
 // Sentinels
@@ -116,6 +118,7 @@ impl IrLexer {
         match &self.source[start as usize..self.cursor as usize] {
             b"ret" => TokenKind::Ret,
             b"i32" => TokenKind::I32,
+            b"f32" => TokenKind::F32,
             b"i1" => TokenKind::I1,
             b"ptr" => TokenKind::Ptr,
             b"str" => TokenKind::Str,
@@ -238,10 +241,14 @@ impl IrLexer {
             }
             b'0'..=b'9' => {
                 let start = self.cursor;
+                let mut dot = false;
 
-                while !self.is_at_end() && self.is_numeric() { self.cursor += 1; }
+                while !self.is_at_end() && self.is_numeric() || self.peek() == b'.' { 
+                    if self.peek() == b'.' { dot = true; }
+                    self.cursor += 1;
+                 }
 
-                Token::new((start,self.cursor), TokenKind::IntLit)
+                Token::new((start,self.cursor), if dot { TokenKind::FloatLit } else { TokenKind::IntLit })
             },
             b'a'..=b'z' |
             b'A'..=b'Z' |

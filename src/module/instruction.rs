@@ -7,6 +7,7 @@
 #[derive(Debug, Clone)]
 pub enum Value {
     IntLit(usize),
+    FloatLit(f64),
     Vreg(usize),
     GlobSym(String),
 }
@@ -15,7 +16,7 @@ impl Value {
     pub fn as_vreg(&self) -> Option<usize> {
         match self {
             Value::Vreg(id) => Some(*id),
-            Value::IntLit(_) | Value::GlobSym(_) => None
+            Value::IntLit(_) | Value::GlobSym(_) | Value::FloatLit(_) => None
         }
     }
 
@@ -34,6 +35,7 @@ impl Value {
 pub enum Type {
     I32,
     I1,
+    F32,
     Ptr,
     Str,
 }
