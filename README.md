@@ -20,32 +20,12 @@ define @main() i32 {
 }
 ```
 
-Note: While development is ongoing, this simple return-integer program is currently the primary syntax fully supported for compilation
+## Optic Documentation
 
-## Requierements & Installation
+You can find the documentation of Optic's IR and Optic itself in the [docs](./docs/) folder.
 
-### Prerequisites
+## Contributing
 
-To compile and run Optic, you need to have the Rust toolchain installed on your system. if you don't have Rust installed, you can get it via [rustup](https://rustup.rs)
+Thank you for considering contributing! We appreciate every kind of contributions!
 
-### Building
-
-To clone the repository and build Optic, run the folowing commands:
-
-``` bash
-git clone https://github.com/parlan-lang/optic
-cd optic
-cargo build --release
-```
-
-After a successful build, you will find an `optic` executable at: `./target/release/optic`
-
-## Usage
-
-Once compiled, you can run the compiler directly. For example, to compile an Optic IR file `prog.opt` into C99:
-
-``` bash
-./target/release/optic prog.opt -o out.c
-```
-
-*If you need more help, run Optic with the `--help` flag to see a list of all supported options and flags* 
+Before contributing, check out our contribution guidelines [here](./CONTRIBUTING.md)
