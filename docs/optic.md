@@ -20,7 +20,7 @@ This is the official documentation of the Optic compilation backend. if you want
 
 #### Prerequisites
 
-To compile Optic, you need a Rust toolchain installed in your system, you can install it using [`rustup`](https://rustup.rs). 
+To compile Optic, you need a Rust toolchain installed in your system, you can install it using [`rustup`](https://rustup.rs).
 
 #### Building
 
@@ -35,7 +35,7 @@ cd optic
 cargo build --release
 ```
 
-After a succesful build, you'll find an `optic` executable in `./target/release/optic`
+After a successful build, you'll find an `optic` executable in `./target/release/optic`
 
 ### Usage
 
@@ -55,11 +55,11 @@ This will create a `prog.c` file containing the output C code.
 
 The first step in the Optic pipeline is the [IR parser](../src/ir/ir_parser.rs)
 
-The parser transalates the textual IR into a in-memory representation, which is divided into hierarchies. The parser outputs a [`Module`](../src/module/mod.rs), which represents the current compilation unit (the current file being compiled), this module contains the functions and globals.
+The parser translates the textual IR into a in-memory representation, which is divided into hierarchies. The parser outputs a [`Module`](../src/module/mod.rs), which represents the current compilation unit (the current file being compiled), this module contains the functions and globals.
 
 ### CFG Builder
 
-After the IR parser converts the textual IR into a `Module`, the [`CFG builder`](../src/cfg/builder.rs) takes a specific function and generates it Control Flow Graph from its linear IR instructions. 
+After the IR parser converts the textual IR into a `Module`, the [`CFG builder`](../src/cfg/builder.rs) takes a specific function and generates it Control Flow Graph from its linear IR instructions.
 
 The [`CFG`](../src/cfg/mod.rs) represent how the code executes, dividing the code into a graph of basic blocks. This CFG is not in SSA form since the IR is not in SSA form
 
@@ -71,11 +71,11 @@ In the non-SSA CFG, you can reassign any virtual register multiple times, but in
 
 ### Out of SSA
 
-Before going generating the final code, we need to go out of SSA form first. To archieve this Optic use virtual register coaleasing, so 2 virtual registers which are used in a $\phi$-node into the same register.
+Before going generating the final code, we need to go out of SSA form first. To archive this Optic use virtual register coaleasing, so 2 virtual registers which are used in a $\phi$-node into the same register.
 
 #### Codegen
 
-The final step of the pipeline is the [codegen](../src/codegen/), where the in-memory IR is converted into the final output. 
+The final step of the pipeline is the [codegen](../src/codegen/), where the in-memory IR is converted into the final output.
 
-Currently, Optic only supports tarteging C, but more backends are planned in the future
+Currently, Optic only supports targeting C, but more backends are planned in the future
 
