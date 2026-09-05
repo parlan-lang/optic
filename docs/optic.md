@@ -61,7 +61,9 @@ The parser translates the textual IR into a in-memory representation, which is d
 
 After the IR parser converts the textual IR into a `Module`, the [`CFG builder`](../src/cfg/builder.rs) takes a specific function and generates it Control Flow Graph from its linear IR instructions.
 
-The [`CFG`](../src/cfg/mod.rs) represent how the code executes, dividing the code into a graph of basic blocks. This CFG is not in SSA form since the IR is not in SSA form
+The [`CFG`](../src/cfg/mod.rs) represent how the code executes, dividing the code into a graph of basic blocks. This CFG is not in SSA form since the IR is not in SSA form.
+
+The CFG builder ensures that every basic block ends with a terminal instruction, which is an instruction that changes the control flow like `jmp`, `br` or `ret`. If it finds a basic block that doesn't end with a terminal instruction, then it throws an error and ends the compilation.
 
 ### SSA Builder
 
@@ -71,7 +73,12 @@ In the non-SSA CFG, you can reassign any virtual register multiple times, but in
 
 ### Out of SSA
 
-Before going generating the final code, we need to go out of SSA form first. To archive this Optic use virtual register coaleasing, so 2 virtual registers which are used in a $\phi$-node into the same register.
+Before going generating the final code, we need to go out of SSA form first. To archieve this, Optic uses a simple algorithm to delete all $\phi$-nodes in the code:
+
+1. **Split Critical Edges**: A Critical Edge occurs when a basic block have multiple predecessors and multiple succesors. We eliminate these Critical Edges by inserting a dummy basic block. 
+2. **Lower $\phi$-nodes into Moves**: Then we convert all the $\phi$-nodes into moves. We do this by inserting a copy instruction at the predecessor block just before branching
+3. **Sequentialize Parallel Moves**: The we eliminate the parallel moves. Because $\phi$-nodes cannot be executed simoultanously, sometimes we can lost data if two registers swap, so we insert a temporal register to eliminate this problem
+4. **Eliminate all $\phi$-nodes**: After all of this, we can delete all $\phi$-nodes sefely. 
 
 #### Codegen
 
