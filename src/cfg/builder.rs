@@ -83,8 +83,8 @@ impl<'a> CfgBuilder<'a> {
 
         for i in 0..num_blocks {
             let block_id = cfg.blocks[i].id;
-
-            if let Some(terminator) = cfg.blocks[i].instructions.last() {
+            
+            if let Some(ref terminator) = cfg.blocks[i].instructions.last().cloned() {
                 match terminator {
                     Instruction::Jmp(dest) => {
                         if let Some(&dest_id) = label_map.get(dest) {
@@ -92,12 +92,14 @@ impl<'a> CfgBuilder<'a> {
                         }
                     }
                     Instruction::Br { true_br, false_br, .. } => {
-                        if let (Some(&true_id), Some(&false_id)) = (label_map.get(true_br), label_map.get(false_br)) {
+                        if let Some(&true_id) = label_map.get(true_br) {
                             cfg.add_edge(block_id, true_id);
+                        }
+                        if let Some(&false_id) = label_map.get(false_br) {
                             cfg.add_edge(block_id, false_id);
                         }
                     }
-                    _ => {}
+                    _ => panic!("error: one of the basic blocks does not end with a terminator.")
                 }
             }
         }

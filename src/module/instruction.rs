@@ -4,7 +4,7 @@
 /// 
 /// A [`Value`] is any value that can be used by an instruction, e.g., an integer literal
 /// or a virtual register
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     IntLit(usize),
     FloatLit(f64),
@@ -16,13 +16,7 @@ impl Value {
     pub fn as_vreg(&self) -> Option<usize> {
         match self {
             Value::Vreg(id) => Some(*id),
-            Value::IntLit(_) | Value::GlobSym(_) | Value::FloatLit(_) => None
-        }
-    }
-
-    pub fn map_vreg(&mut self, mut f: impl FnMut(usize) -> usize) {
-        if let Value::Vreg(id) = self {
-            *id = f(*id);
+            _ => None
         }
     }
 }

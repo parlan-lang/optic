@@ -67,31 +67,26 @@ Options:
     for func in &mut module.functions {
         // extern functions doesn't have a body
         if !func.is_extern {
-            ssa::builder::build_ssa(&mut func.cfg);
+            let param_types: HashMap<ssa::Vreg, module::instruction::Type> = func
+                .params
+                .iter()
+                .map(|p| (ssa::Vreg(p.vreg), p.ty))
+                .collect();
+
+            ssa::builder::build_ssa(&mut func.cfg, &param_types);
         }
     }
     let ssa_con_time = start.elapsed().as_secs_f32();
 
     start = Instant::now();
-    let mut vreg_aliases: HashMap<&String, ssa::VregAlias> = HashMap::new();
-    for func in &module.functions {
-        if func.is_extern { continue; }
-
-        vreg_aliases.insert(&func.name, ssa::VregAlias::new());
-        for blk in &func.cfg.blocks {
-            for ins in &blk.instructions {
-                match ins {
-                    module::instruction::Instruction::Phi { vreg, srcs, .. } => {
-                        srcs.iter().for_each(|v| vreg_aliases.get_mut(&func.name).unwrap().union(*vreg, v.as_vreg().unwrap()));
-                    }
-                    _ => continue
-                }
-            }
-        }
+    for func in &mut module.functions {
+        func.cfg.split_critical_edges();
+        let mut next_vreg = func.cfg.get_max_vreg();
+        func.cfg.lower_phis_to_moves(&mut next_vreg);
     }
     let ssa_decon_time = start.elapsed().as_secs_f32();
 
-    let mut codegen = codegen::c_backend::CBackend::new(output, &module, vreg_aliases);
+    let mut codegen = codegen::c_backend::CBackend::new(output, &mut module);
 
     start = Instant::now();
     codegen.compile();
