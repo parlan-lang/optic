@@ -99,6 +99,7 @@ impl<'a> CfgBuilder<'a> {
                             cfg.add_edge(block_id, false_id);
                         }
                     }
+                    Instruction::Ret { .. } => {}
                     _ => panic!("error: one of the basic blocks does not end with a terminator.")
                 }
             }
