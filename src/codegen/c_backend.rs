@@ -1,17 +1,13 @@
 //! This module implements the C backend for Optic
 
-#![allow(unused)]
-
 use std::fs::File;
-use std::io::{BufRead, BufWriter, Write};
-use std::collections::HashMap;
+use std::io::{self, BufRead, BufWriter, Write};
 
 use crate::module::{
     instruction::*,
     function::*,
     *
 };
-use crate::cfg::*;
 
 pub struct CBackend<'a> {
     out:     File,
@@ -48,22 +44,21 @@ impl<'a> CBackend<'a> {
     fn compile_inst(
         &self, 
         inst: &Instruction, 
-        global: &mut BufWriter<Vec<u8>>, 
         header: &mut BufWriter<Vec<u8>>, 
         body: &mut BufWriter<Vec<u8>>,
-    ) {
+    ) -> io::Result<()> {
         match inst {
             Instruction::Ret { val, ty } => {
-                writeln!(body, "  return ({}){};", self.compile_type(ty), self.compile_value(val));
+                writeln!(body, "  return ({}){};", self.compile_type(ty), self.compile_value(val))?;
             },
             Instruction::Copy { vreg, val, ty } => {
                 let def = format!("  {} vreg_{};", self.compile_type(ty), *vreg);
                 if !header.buffer().lines().any(|l| l.unwrap() == def) {
-                    writeln!(header, "{}", def);
+                    writeln!(header, "{}", def)?;
                 }
-                writeln!(body, "  vreg_{} = ({}){};", *vreg, self.compile_type(ty), self.compile_value(val));
+                writeln!(body, "  vreg_{} = ({}){};", *vreg, self.compile_type(ty), self.compile_value(val))?;
             }
-            Instruction::Op { vreg, kind, lhs, rhs, ty, .. } => {
+            Instruction::Op { vreg, kind, lhs, rhs, ty, val_ty } => {
                 let op = match kind {
                     OpKind::Add => "+",
                     OpKind::Sub => "-",
@@ -74,29 +69,36 @@ impl<'a> CBackend<'a> {
                     OpKind::CmpSgt | OpKind::CmpUgt => ">",
                 };
 
-                writeln!(header, "  {} vreg_{};", self.compile_type(ty), (*vreg));
-                writeln!(body, "  vreg_{} = ({})({} {} {});", (*vreg), self.compile_type(ty), self.compile_value(lhs), op, self.compile_value(rhs));                
+                writeln!(header, "  {} vreg_{};", self.compile_type(ty), *vreg)?;
+                let val_ty = if let Some(ty) = val_ty {
+                    format!("({})", self.compile_type(ty))
+                } else {
+                    "".to_string()
+                };
+                writeln!(body, "  vreg_{} = ({})({}{} {} {}{});", *vreg, self.compile_type(ty), val_ty, self.compile_value(lhs), op, val_ty, self.compile_value(rhs))?;                
             }
             Instruction::Call { vreg, func, args, ty } => {
                 let args = args.iter().map(|v| self.compile_value(v)).collect::<Vec<String>>().join(",");
 
-                writeln!(header, "  {} vreg_{};", self.compile_type(ty), (*vreg));
-                writeln!(body, "  vreg_{} = ({}){}({});", (*vreg), self.compile_type(ty), func, args);
+                writeln!(header, "  {} vreg_{};", self.compile_type(ty), (*vreg))?;
+                writeln!(body, "  vreg_{} = ({}){}({});", (*vreg), self.compile_type(ty), func, args)?;
             }
             Instruction::Label(label) => {
-                writeln!(body, "L_{}:", label);
+                writeln!(body, "L_{}:", label)?;
             }
             Instruction::Jmp(dest) => {
-                writeln!(body, "  goto L_{};", dest);
+                writeln!(body, "  goto L_{};", dest)?;
             }
             Instruction::Br { cond, true_br, false_br } => {
-                writeln!(body, "  if ({}) goto L_{}; else goto L_{};", self.compile_value(cond), true_br, false_br);
+                writeln!(body, "  if ({}) goto L_{}; else goto L_{};", self.compile_value(cond), true_br, false_br)?;
             }
-            Instruction::Phi { vreg, srcs, ty } => {}
+            Instruction::Phi { .. } => {}
         }
+
+        Ok(())
     }
 
-    fn compile_func(&self, func: &Function, global: &mut BufWriter<Vec<u8>>, body: &mut BufWriter<Vec<u8>>) {
+    fn compile_func(&self, func: &Function, body: &mut BufWriter<Vec<u8>>) -> io::Result<()> {
         let params = func.params.iter().map(|p| {
             if p.is_vaarg { "...".to_string() }
             else { format!("{} vreg_{}", self.compile_type(&p.ty), p.vreg) }
@@ -108,44 +110,48 @@ impl<'a> CBackend<'a> {
                 self.compile_type(&func.ty),
                 func.name,
                 params
-            );
-            return;
+            )?;
+            return Ok(());
         }
         writeln!(
             body, "\n{} {}({}) {{", 
             self.compile_type(&func.ty), 
             func.name, 
             params
-        );
+        )?;
 
-        let mut header = &mut BufWriter::new(Vec::new());
-        let mut local_body = &mut BufWriter::new(Vec::new());
+        let mut header = BufWriter::new(Vec::new());
+        let mut local_body = BufWriter::new(Vec::new());
 
         for blk in &func.cfg.blocks {
-            writeln!(local_body, "// BB_{}:", blk.id.0);
+            writeln!(local_body, "// BB_{}:", blk.id.0)?;
 
             for inst in &blk.instructions {
-                self.compile_inst(inst, global, header, local_body);
+                self.compile_inst(inst, &mut header, &mut local_body)?;
             }
         }
 
         body.write(header.buffer()).unwrap();
         body.write(local_body.buffer()).unwrap();
-        writeln!(body, "}}");
+        writeln!(body, "}}")?;
+        
+        Ok(())
     }
 
-    fn compile_global(&mut self, data: &GlobData, global: &mut BufWriter<Vec<u8>>) {
+    fn compile_global(&mut self, data: &GlobData, global: &mut BufWriter<Vec<u8>>) -> io::Result<()> {
         if data.is_constant {
-            write!(global, "const ");
+            write!(global, "const ")?;
         }
         match &data.val {
             GlobValue::Int(n) => {
-                writeln!(global, "{} glob_{} = {};", self.compile_type(&data.ty), data.name, n);
+                writeln!(global, "{} glob_{} = {};", self.compile_type(&data.ty), data.name, n)?;
             }
             GlobValue::Str(s) => {
-                writeln!(global, "{} glob_{} = \"{}\";", self.compile_type(&data.ty), data.name, s);
+                writeln!(global, "{} glob_{} = \"{}\";", self.compile_type(&data.ty), data.name, s)?;
             }
         }
+
+        Ok(())
     }
 
     pub fn compile(&mut self) {
@@ -156,15 +162,14 @@ impl<'a> CBackend<'a> {
             r#"// Module "{}"
 #include <stdint.h>"#, 
             self.module.name
-        );
+        ).unwrap();
         
         for global in &self.module.globals {
-            self.compile_global(global, &mut header);
+            self.compile_global(global, &mut header).unwrap();
         }
 
         for func in &self.module.functions {
-
-            self.compile_func(func, &mut header, &mut body);
+            self.compile_func(func,&mut body).unwrap();
         }
 
         self.out.write(header.buffer()).unwrap();

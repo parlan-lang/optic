@@ -4,8 +4,6 @@
 //! In this module you will find the definitions of [`Module`], [`Function`](function::Function), [`Instruction`](`instruction::Instruction`), and others.
 //! These types represents the structure and contains the data of the program
 
-#![allow(unused)]
-
 use crate::cfg::builder::CfgBuilder;
 
 pub mod instruction;

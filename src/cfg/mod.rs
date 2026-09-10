@@ -2,8 +2,6 @@
 //! 
 //! having a CFG makes easier some optimizations and analisys
 
-#![allow(unused)]
-
 pub mod builder;
 
 use crate::module::instruction::*;
@@ -39,16 +37,6 @@ impl ControlFlowGraph {
         self.forward_edges.push(Vec::new());
         self.backward_edges.push(Vec::new());
         id
-    }
-
-    pub fn get_block(&self, id: BlockId) -> &BasicBlock {
-        &self.blocks[id.0]
-    }
-
-    pub fn add_ins(&mut self, block_id: BlockId, ins: Instruction) {
-        if let Some(block) = self.blocks.get_mut(block_id.0) {
-            block.instructions.push(ins);
-        }
     }
 
     pub fn add_edge(&mut self, from: BlockId, to: BlockId) {

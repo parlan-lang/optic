@@ -1,7 +1,5 @@
 //! This module implements the lexer/tokenizer of the IR
 
-#![allow(unused)]
-
 /// Represents the type of the token
 /// 
 /// A [`Token`] can have one of several types (e.g., [`TokenKind::Define`]), and this enum represents

@@ -2,7 +2,6 @@
 //! the [`CFG`](`crate::cfg::ControlFlowGraph`) of every function
 
 use std::collections::HashMap;
-use std::vec;
 
 use crate::cfg::*;
 use crate::module::function::*;
@@ -34,7 +33,7 @@ impl<'a> CfgBuilder<'a> {
         let mut curr_block_ins = Vec::new();
         let mut next_block_id = 0;
 
-        let mut finish_curr_block = |ins: &mut Vec<Instruction>, cfg: &mut ControlFlowGraph, next_block_id: &mut usize| {
+        let finish_curr_block = |ins: &mut Vec<Instruction>, cfg: &mut ControlFlowGraph, next_block_id: &mut usize| {
             if ins.is_empty() { return None };
 
             let id = BlockId(*next_block_id);
@@ -47,7 +46,7 @@ impl<'a> CfgBuilder<'a> {
 
             cfg.blocks.push(block);
             cfg.forward_edges.push(Vec::new());
-            cfg.backward_edges.push((Vec::new()));
+            cfg.backward_edges.push(Vec::new());
 
             Some(id)
         };

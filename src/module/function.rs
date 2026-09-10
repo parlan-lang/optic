@@ -1,5 +1,3 @@
-#![allow(unused)]
-
 use crate::module::instruction::*;
 use crate::cfg::*;
 

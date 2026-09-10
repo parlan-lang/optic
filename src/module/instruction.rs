@@ -1,5 +1,3 @@
-#![allow(unused)]
-
 /// Represents a value that can be used by an instruction
 /// 
 /// A [`Value`] is any value that can be used by an instruction, e.g., an integer literal
@@ -68,7 +66,7 @@ pub enum Instruction {
         lhs: Value,
         rhs: Value,
         ty: Type,
-        val_ty: Option<Type>
+        val_ty: Option<Type>,
     },
     Call {
         vreg: usize,
