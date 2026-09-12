@@ -66,7 +66,6 @@ pub enum Instruction {
         lhs: Value,
         rhs: Value,
         ty: Type,
-        val_ty: Option<Type>,
     },
     Call {
         vreg: usize,
@@ -94,7 +93,12 @@ impl Instruction {
     }
 
     pub fn is_terminator(&self) -> bool {
-        matches!(self, Instruction::Jmp(_))
+        match self {
+            Instruction::Jmp(_) |
+            Instruction::Br { .. } |
+            Instruction::Ret { .. } => true,
+            _ => false,
+        }
     }
 
     pub fn get_label_name(&self) -> Option<&String> {

@@ -127,7 +127,6 @@ impl IrParser {
     /// Parses the `ret` instruction
     fn parse_ins_ret(&mut self) -> Instruction {
         self.eat(TokenKind::Ret);
-        self.eat(TokenKind::Dot);
 
         let ty = self.parse_type();
 
@@ -137,49 +136,44 @@ impl IrParser {
     }
 
     /// Parses the `copy` instruction
-    fn parse_ins_copy(&mut self, vreg: usize, ty: Type) -> Instruction {
+    fn parse_ins_copy(&mut self, vreg: usize) -> Instruction {
         self.eat(TokenKind::Copy);
 
+        let ty = self.parse_type();
         let val = self.parse_value();
 
         Instruction::Copy { vreg, val, ty }
     }
 
-    fn parse_ins_op(&mut self, vreg: usize, ty: Type) -> Instruction {
-        let mut val_ty: Option<Type> = None;
+    fn parse_ins_op(&mut self, vreg: usize) -> Instruction {
         let kind = match self.next().kind {
             TokenKind::Add => OpKind::Add,
             TokenKind::Sub => OpKind::Sub,
             TokenKind::Mul => OpKind::Mul,
             TokenKind::Div => OpKind::Div,
             TokenKind::Udiv => OpKind::Udiv,
-            TokenKind::Cmp => {
-                self.eat(TokenKind::Dot);
-                let cmp_kind = match self.next().kind {
-                    TokenKind::Eq => OpKind::CmpEq,
-                    TokenKind::Ne => OpKind::CmpNe,
-                    TokenKind::Slt => OpKind::CmpSlt,
-                    TokenKind::Ult => OpKind::CmpUlt,
-                    TokenKind::Sgt => OpKind::CmpSgt,
-                    TokenKind::Ugt => OpKind::CmpUgt,
-                    _ => panic!()
-                };
-                self.eat(TokenKind::Dot);
-                val_ty = Some(self.parse_type());
-                cmp_kind
-            }
+            TokenKind::Ceq => OpKind::CmpEq,
+            TokenKind::Cne => OpKind::CmpNe,
+            TokenKind::Cslt => OpKind::CmpSlt,
+            TokenKind::Cult => OpKind::CmpUlt,
+            TokenKind::Csgt => OpKind::CmpSgt,
+            TokenKind::Cugt => OpKind::CmpUgt,
             _ => panic!()
         };
+
+        let ty = self.parse_type();
 
         let lhs = self.parse_value();
         self.eat(TokenKind::Comma);
         let rhs = self.parse_value();
 
-        Instruction::Op { vreg, kind, lhs, rhs, ty, val_ty}
+        Instruction::Op { vreg, kind, lhs, rhs, ty}
     }
 
-    fn parse_ins_call(&mut self, vreg: usize, ty: Type) -> Instruction {
+    fn parse_ins_call(&mut self, vreg: usize) -> Instruction {
         self.eat(TokenKind::Call);
+
+        let ty = self.parse_type();
 
         let func_tk = self.eat(TokenKind::GlobSym);
         let func = self.src[func_tk.get_span()].to_string();
@@ -249,15 +243,15 @@ impl IrParser {
                 };
 
                 self.eat(TokenKind::Assing);
-                self.eat(TokenKind::Dot);
-                let ty = self.parse_type();
 
                 match self.peek().kind {
-                    TokenKind::Copy => self.parse_ins_copy(vreg, ty),
-                    TokenKind::Call => self.parse_ins_call(vreg, ty),
-                    TokenKind::Add | TokenKind::Sub |
-                    TokenKind::Mul | TokenKind::Div |
-                    TokenKind::Cmp => self.parse_ins_op(vreg, ty),
+                    TokenKind::Copy => self.parse_ins_copy(vreg),
+                    TokenKind::Call => self.parse_ins_call(vreg),
+                    TokenKind::Add  | TokenKind::Sub  |
+                    TokenKind::Mul  | TokenKind::Div  |
+                    TokenKind::Ceq  | TokenKind::Cne  |
+                    TokenKind::Cslt | TokenKind::Cult |
+                    TokenKind::Csgt | TokenKind::Cugt => self.parse_ins_op(vreg),
                     _ => {
                         eprintln!("error: expected an instruction, found {:?} instead", self.peek().kind);
                         panic!()
@@ -320,6 +314,7 @@ impl IrParser {
         let ty = self.parse_type();
 
         if is_extern {
+            self.curr_vreg = curr_vreg; // reset the virtual registers
             return Function { name, params, ty, body: Vec::new(), cfg: ControlFlowGraph::new(), is_extern }
         }
 

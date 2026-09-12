@@ -58,24 +58,20 @@ impl<'a> CBackend<'a> {
                 }
                 writeln!(body, "  vreg_{} = ({}){};", *vreg, self.compile_type(ty), self.compile_value(val))?;
             }
-            Instruction::Op { vreg, kind, lhs, rhs, ty, val_ty } => {
-                let op = match kind {
-                    OpKind::Add => "+",
-                    OpKind::Sub => "-",
-                    OpKind::Mul => "*",
-                    OpKind::Div | OpKind::Udiv => "/",
-                    OpKind::CmpEq => "==", OpKind::CmpNe => "!=",
-                    OpKind::CmpSlt | OpKind::CmpUlt => "<",
-                    OpKind::CmpSgt | OpKind::CmpUgt => ">",
+            Instruction::Op { vreg, kind, lhs, rhs, ty } => {
+                let (op, res_ty) = match kind {
+                    OpKind::Add => ("+", *ty),
+                    OpKind::Sub => ("-", *ty),
+                    OpKind::Mul => ("*", *ty),
+                    OpKind::Div | OpKind::Udiv => ("/", *ty),
+                    OpKind::CmpEq => ("==", Type::I1), 
+                    OpKind::CmpNe => ("!=", Type::I1),
+                    OpKind::CmpSlt | OpKind::CmpUlt => ("<", Type::I1),
+                    OpKind::CmpSgt | OpKind::CmpUgt => (">", Type::I1),
                 };
 
                 writeln!(header, "  {} vreg_{};", self.compile_type(ty), *vreg)?;
-                let val_ty = if let Some(ty) = val_ty {
-                    format!("({})", self.compile_type(ty))
-                } else {
-                    "".to_string()
-                };
-                writeln!(body, "  vreg_{} = ({})({}{} {} {}{});", *vreg, self.compile_type(ty), val_ty, self.compile_value(lhs), op, val_ty, self.compile_value(rhs))?;                
+                writeln!(body, "  vreg_{} = ({})(({}){} {} ({}){});", *vreg, self.compile_type(&res_ty), self.compile_type(ty), self.compile_value(lhs), op, self.compile_type(ty), self.compile_value(rhs))?;                
             }
             Instruction::Call { vreg, func, args, ty } => {
                 let args = args.iter().map(|v| self.compile_value(v)).collect::<Vec<String>>().join(",");
