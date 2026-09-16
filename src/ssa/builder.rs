@@ -249,6 +249,32 @@ pub fn build_ssa(cfg: &mut ControlFlowGraph, param_types: &HashMap<Vreg, Type>) 
                         *cond = Value::Vreg(ssa_id.0);
                     }
                 }
+                Instruction::Alloc { vreg, .. } => {
+                    let ssa_id = builder.new_value();
+                    var_types.insert(Vreg(*vreg), Type::Ptr);
+                    builder.write_variable(block_id, Vreg(*vreg), ssa_id);
+                    *vreg = ssa_id.0;
+                }
+                Instruction::Store { ptr, val, .. } => {
+                    if let Some(ptr_vreg) = ptr.as_vreg() {
+                        let ssa_id = builder.read_variable(&cfg.backward_edges, block_id, Vreg(ptr_vreg));
+                        *ptr = Value::Vreg(ssa_id.0);
+                    }
+                    if let Some(val_vreg) = val.as_vreg() {
+                        let ssa_id = builder.read_variable(&cfg.backward_edges, block_id, Vreg(val_vreg));
+                        *val = Value::Vreg(ssa_id.0);
+                    }
+                }
+                Instruction::Load { vreg, ptr, ty } => {
+                    if let Some(ptr_vreg) = ptr.as_vreg() {
+                        let ssa_id = builder.read_variable(&cfg.backward_edges, block_id, Vreg(ptr_vreg));
+                        *ptr = Value::Vreg(ssa_id.0);
+                    }
+                    let ssa_id = builder.new_value();
+                    var_types.insert(Vreg(*vreg), *ty);
+                    builder.write_variable(block_id, Vreg(*vreg), ssa_id);
+                    *vreg = ssa_id.0;
+                }
                 Instruction::Label(_) | Instruction::Jmp(_) | Instruction::Phi { .. } => {}
             }
         }
@@ -313,12 +339,19 @@ pub fn build_ssa(cfg: &mut ControlFlowGraph, param_types: &HashMap<Vreg, Type>) 
                     }
                 }
                 Instruction::Br { cond, .. } => resolve_val(cond),
+                Instruction::Alloc { .. } => {}
+                Instruction::Store { ptr, val, .. } => {
+                    resolve_val(ptr);
+                    resolve_val(val);
+                }
+                Instruction::Load { ptr, .. } => resolve_val(ptr),
                 Instruction::Phi { srcs, .. } => {
                     for src in srcs {
                         resolve_val(src);
                     }
                 }
-                Instruction::Label(_) | Instruction::Jmp(_) => {}
+                Instruction::Label(_) | 
+                Instruction::Jmp(_) => {}
             }
         }
     }

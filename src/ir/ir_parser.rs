@@ -221,6 +221,46 @@ impl IrParser {
         Instruction::Br { cond, true_br: self.src[true_br.get_span()].to_string(), false_br: self.src[false_br.get_span()].to_string() }
     }
 
+    fn parse_ins_alloc(&mut self, vreg: usize) -> Instruction {
+        self.eat(TokenKind::Alloc);
+
+        let ty = self.parse_type();
+
+        let num = if self.peek().kind == TokenKind::Comma {
+            self.next();
+            let num_tk = self.eat(TokenKind::IntLit);
+            self.src[num_tk.get_span()].parse::<u32>().unwrap()
+        } else {
+            1
+        };
+
+        Instruction::Alloc { vreg, ty, num }
+    }
+
+    fn parse_ins_store(&mut self) -> Instruction {
+        self.eat(TokenKind::Store);
+
+        let ty = self.parse_type();
+
+        let ptr = self.parse_value();
+
+        self.eat(TokenKind::Comma);
+
+        let val = self.parse_value();
+
+        Instruction::Store { ptr, val, ty }
+    }
+
+    fn parse_ins_load(&mut self, vreg: usize) -> Instruction {
+        self.eat(TokenKind::Load);
+
+        let ty = self.parse_type();
+
+        let ptr = self.parse_value();
+
+        Instruction::Load { vreg, ptr, ty }
+    }
+
     /// Parses an instruction
     /// 
     /// Panics
@@ -231,6 +271,7 @@ impl IrParser {
             TokenKind::Ret => self.parse_ins_ret(),
             TokenKind::Jmp => self.parse_ins_jmp(),
             TokenKind::Br => self.parse_ins_br(),
+            TokenKind::Store => self.parse_ins_store(),
             TokenKind::Label => {
                 let label = self.next();
                 Instruction::Label(self.src[label.get_span()].to_string())
@@ -252,6 +293,8 @@ impl IrParser {
                 match self.peek().kind {
                     TokenKind::Copy => self.parse_ins_copy(vreg),
                     TokenKind::Call => self.parse_ins_call(vreg),
+                    TokenKind::Alloc => self.parse_ins_alloc(vreg),
+                    TokenKind::Load => self.parse_ins_load(vreg),
                     TokenKind::Add  | TokenKind::Sub  |
                     TokenKind::Mul  | TokenKind::Div  |
                     TokenKind::Ceq  | TokenKind::Cne  |

@@ -83,6 +83,21 @@ pub enum Instruction {
         true_br: String,
         false_br: String
     },
+    Alloc {
+        vreg: usize,
+        num: u32, 
+        ty: Type
+    },
+    Store {
+        ptr: Value,
+        val: Value,
+        ty: Type
+    },
+    Load {
+        vreg: usize,
+        ptr: Value,
+        ty: Type
+    },
     Phi {
         vreg: usize,
         srcs: Vec<Value>,

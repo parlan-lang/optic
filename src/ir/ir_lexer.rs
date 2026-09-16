@@ -22,6 +22,9 @@ pub enum TokenKind {
     Cslt, Cult,
     Csgt, Cugt,
     Br,
+    Alloc, 
+    Store,
+    Load,
     Data,
     Constant,
 
@@ -135,6 +138,9 @@ impl IrLexer {
             b"cslt" => TokenKind::Cslt, b"cult" => TokenKind::Cult,
             b"csgt" => TokenKind::Csgt, b"cugt" => TokenKind::Cugt,
             b"br" => TokenKind::Br,
+            b"alloc" => TokenKind::Alloc,
+            b"store" => TokenKind::Store,
+            b"load" => TokenKind::Load,
             b"data" => TokenKind::Data,
             b"constant" => TokenKind::Constant,
             _ => TokenKind::Error

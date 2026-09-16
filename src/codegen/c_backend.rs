@@ -94,6 +94,17 @@ impl<'a> CBackend<'a> {
             Instruction::Br { cond, true_br, false_br } => {
                 writeln!(body, "  if ({}) goto L_{}; else goto L_{};", self.compile_value(cond), true_br, false_br)?;
             }
+            Instruction::Alloc { vreg, num, ty } => {
+                writeln!(header, "  void* vreg_{};", *vreg)?;
+                writeln!(body, "  vreg_{} = ({}[{}]){{0}};", *vreg, self.compile_type(ty), *num)?;
+            }
+            Instruction::Store { ptr, val, ty } => {
+                writeln!(body, "  *( ({} *){} ) = {};", self.compile_type(ty), self.compile_value(ptr), self.compile_value(val))?;
+            }
+            Instruction::Load { vreg, ptr, ty } => {
+                writeln!(header, "  {} vreg_{};", self.compile_type(ty), *vreg)?;
+                writeln!(body, "  vreg_{} = *( ({} *){} );", *vreg, self.compile_type(ty), self.compile_value(ptr))?;
+            }
             Instruction::Phi { .. } => {}
         }
 
