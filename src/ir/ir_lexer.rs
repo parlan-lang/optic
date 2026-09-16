@@ -31,6 +31,7 @@ pub enum TokenKind {
     F32,
     Ptr,
     Str,
+    Void,
 
 // Delimiters
     Dot,
@@ -119,6 +120,7 @@ impl IrLexer {
             b"i1" => TokenKind::I1,
             b"ptr" => TokenKind::Ptr,
             b"str" => TokenKind::Str,
+            b"void" => TokenKind::Void,
             b"define" => TokenKind::Define,
             b"extern" => TokenKind::Extern,
             b"copy" => TokenKind::Copy,

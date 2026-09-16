@@ -29,6 +29,7 @@ impl<'a> CBackend<'a> {
             Type::F32 => "float", // `float` is almost always of 4 bytes (32 bits)
             Type::Ptr => "void*",
             Type::Str => "char*",
+            Type::Void => "void",
         }
     }
 
@@ -38,6 +39,7 @@ impl<'a> CBackend<'a> {
             Value::FloatLit(f) => format!("{}", f),
             Value::Vreg(v) => format!("vreg_{}", *v),
             Value::GlobSym(s) => format!("glob_{}", s),
+            Value::Void => format!("/* VOID */"),
         }
     }
 
@@ -49,7 +51,11 @@ impl<'a> CBackend<'a> {
     ) -> io::Result<()> {
         match inst {
             Instruction::Ret { val, ty } => {
-                writeln!(body, "  return ({}){};", self.compile_type(ty), self.compile_value(val))?;
+                let ty = match ty {
+                    Type::Void => "".to_string(),
+                    _ => format!("({})", self.compile_type(ty))
+                };
+                writeln!(body, "  return {}{};", ty, self.compile_value(val))?;
             },
             Instruction::Copy { vreg, val, ty } => {
                 let def = format!("  {} vreg_{};", self.compile_type(ty), *vreg);

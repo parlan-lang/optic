@@ -8,6 +8,8 @@ pub enum Value {
     FloatLit(f64),
     Vreg(usize),
     GlobSym(String),
+    // The value returned by `ret void`
+    Void,
 }
 
 impl Value {
@@ -30,6 +32,7 @@ pub enum Type {
     F32,
     Ptr,
     Str,
+    Void,
 }
 
 /// The kind of a binary or boolean operation 

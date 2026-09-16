@@ -117,6 +117,7 @@ impl IrParser {
             TokenKind::F32 => Type::F32,
             TokenKind::Ptr => Type::Ptr,
             TokenKind::Str => Type::Str,
+            TokenKind::Void => Type::Void,
             _ => {
                 eprintln!("error: expected a type, found {:?} instead", self.peek().kind);
                 panic!()
@@ -129,6 +130,10 @@ impl IrParser {
         self.eat(TokenKind::Ret);
 
         let ty = self.parse_type();
+
+        if ty == Type::Void {
+            return Instruction::Ret { val: Value::Void, ty }
+        }
 
         let val = self.parse_value();
 
