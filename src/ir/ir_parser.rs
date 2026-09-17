@@ -116,7 +116,7 @@ impl IrParser {
             TokenKind::I1 => Type::I1,
             TokenKind::F32 => Type::F32,
             TokenKind::Ptr => Type::Ptr,
-            TokenKind::Str => Type::Str,
+            TokenKind::Ascii => Type::Ascii,
             TokenKind::Void => Type::Void,
             _ => {
                 eprintln!("error: expected a type, found {:?} instead", self.peek().kind);
@@ -381,16 +381,45 @@ impl IrParser {
         Function { name, params, ty, body, cfg: ControlFlowGraph::new(), is_extern }
     }
 
-    fn parse_global_value(&mut self) -> GlobValue {
-        let tk = self.next();
-        match tk.kind {
-            TokenKind::IntLit => GlobValue::Int(self.src[tk.get_span()].parse().unwrap()),
-            TokenKind::StrLit => GlobValue::Str(self.src[tk.get_span()].to_string()),
-            _ => {
-                eprintln!("error: expected a number or string literal");
-                panic!()
+    fn parse_global_value(&mut self) -> Vec<u8> {
+        let mut bytes: Vec<u8> = Vec::new();
+        
+        self.eat(TokenKind::Lbrace);
+
+        while self.peek().kind != TokenKind::Rbrace {
+            match self.parse_type() {
+                Type::I32 => {
+                    let tk = self.eat(TokenKind::IntLit);
+                    self.src[tk.get_span()].parse::<i32>().unwrap().to_le_bytes().iter().for_each(|b| bytes.push(*b));
+                },
+                Type::I1 => {
+                    let tk = self.eat(TokenKind::IntLit);
+                    if self.src[tk.get_span()].parse::<i8>().unwrap() > 0 {
+                        bytes.push(1);
+                    } else {
+                        bytes.push(0);
+                    }
+                },
+                Type::F32 => {
+                    let tk = self.eat(TokenKind::IntLit);
+                    self.src[tk.get_span()].parse::<f32>().unwrap().to_le_bytes().iter().for_each(|b| bytes.push(*b));
+                },
+                Type::Ptr => panic!("error: data instructions don't support pointers"),
+                Type::Ascii => {
+                    let tk = self.eat(TokenKind::AsciiLit);
+                    self.src[tk.get_span()].as_bytes().iter().for_each(|b| bytes.push(*b));
+                },
+                Type::Void => panic!("error: data instructions don't support void"),
+            };
+
+            if self.peek().kind != TokenKind::Rbrace {
+                self.eat(TokenKind::Comma);
             }
         }
+
+        self.eat(TokenKind::Rbrace);
+
+        bytes
     }
 
     fn parse_global(&mut self) -> GlobData {
@@ -407,12 +436,10 @@ impl IrParser {
         let name = self.src[name_tk.get_span()].to_string();
 
         self.eat(TokenKind::Assing);
-        self.eat(TokenKind::Dot);
-        let ty = self.parse_type();
 
         let val = self.parse_global_value();
 
-        GlobData { name, ty, val, is_constant }
+        GlobData { name, val, is_constant }
     }
 
     /// Parses a module

@@ -28,7 +28,7 @@ impl<'a> CBackend<'a> {
             Type::I1 => "uint8_t",
             Type::F32 => "float", // `float` is almost always of 4 bytes (32 bits)
             Type::Ptr => "void*",
-            Type::Str => "char*",
+            Type::Ascii => "char",
             Type::Void => "void",
         }
     }
@@ -153,16 +153,21 @@ impl<'a> CBackend<'a> {
 
     fn compile_global(&mut self, data: &GlobData, global: &mut BufWriter<Vec<u8>>) -> io::Result<()> {
         if data.is_constant {
-            write!(global, "const ")?;
+            write!(global, "static const uint8_t ")?;
+        } else {
+            write!(global, "static uint8_t ")?;
         }
-        match &data.val {
-            GlobValue::Int(n) => {
-                writeln!(global, "{} glob_{} = {};", self.compile_type(&data.ty), data.name, n)?;
-            }
-            GlobValue::Str(s) => {
-                writeln!(global, "{} glob_{} = \"{}\";", self.compile_type(&data.ty), data.name, s)?;
-            }
-        }
+
+        writeln!(
+            global, 
+            "glob_{}[] = {{ {} }};", 
+            data.name, 
+            data.val
+                .iter()
+                .map(|b| format!("0x{:02x}", b))
+                .collect::<Vec<_>>()
+                .join(", ")
+        )?;
 
         Ok(())
     }

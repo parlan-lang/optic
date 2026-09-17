@@ -33,7 +33,7 @@ pub enum TokenKind {
     I1,
     F32,
     Ptr,
-    Str,
+    Ascii,
     Void,
 
 // Delimiters
@@ -52,7 +52,7 @@ pub enum TokenKind {
     Label,
     IntLit,
     FloatLit,
-    StrLit,
+    AsciiLit,
 
 // Sentinels
     Eof,
@@ -122,7 +122,7 @@ impl IrLexer {
             b"f32" => TokenKind::F32,
             b"i1" => TokenKind::I1,
             b"ptr" => TokenKind::Ptr,
-            b"str" => TokenKind::Str,
+            b"ascii" => TokenKind::Ascii,
             b"void" => TokenKind::Void,
             b"define" => TokenKind::Define,
             b"extern" => TokenKind::Extern,
@@ -209,7 +209,7 @@ impl IrLexer {
                 while !self.is_at_end() && self.peek() != b'"' { self.cursor += 1; }
                 self.cursor += 1;
 
-                Token::new((start, self.cursor - 1), TokenKind::StrLit)
+                Token::new((start, self.cursor - 1), TokenKind::AsciiLit)
             }
             b'@' => {
                 self.cursor += 1; // do not include the `@`

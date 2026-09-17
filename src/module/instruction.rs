@@ -31,7 +31,7 @@ pub enum Type {
     I1,
     F32,
     Ptr,
-    Str,
+    Ascii,
     Void,
 }
 
@@ -127,18 +127,10 @@ impl Instruction {
     }
 }
 
-/// Represents a global value used to initialize a `data` instruction
-#[derive(Debug, Clone)]
-pub enum GlobValue {
-    Int(usize),
-    Str(String),
-}
-
 /// Represents a global data (the `data` instruction)
 #[derive(Debug, Clone)]
 pub struct GlobData {
     pub name: String,
-    pub ty: Type,
-    pub val: GlobValue,
+    pub val: Vec<u8>,
     pub is_constant: bool,
 }
