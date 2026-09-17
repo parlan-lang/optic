@@ -233,9 +233,9 @@ pub fn build_ssa(cfg: &mut ControlFlowGraph, param_types: &HashMap<Vreg, Type>) 
                 }
                 Instruction::Call { vreg, args, ty, .. } => {
                     for arg in args {
-                        if let Some(vreg_id) = arg.as_vreg() {
+                        if let Some(vreg_id) = arg.1.as_vreg() {
                             let ssa_id = builder.read_variable(&cfg.backward_edges, block_id, Vreg(vreg_id));
-                            *arg = Value::Vreg(ssa_id.0);
+                            arg.1 = Value::Vreg(ssa_id.0);
                         }
                     }
                     let ssa_id = builder.new_value();
@@ -335,7 +335,7 @@ pub fn build_ssa(cfg: &mut ControlFlowGraph, param_types: &HashMap<Vreg, Type>) 
                 }
                 Instruction::Call { args, .. } => {
                     for arg in args {
-                        resolve_val(arg);
+                        resolve_val(&mut arg.1);
                     }
                 }
                 Instruction::Br { cond, .. } => resolve_val(cond),

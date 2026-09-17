@@ -73,8 +73,9 @@ pub enum Instruction {
     Call {
         vreg: usize,
         func: String,
-        args: Vec<Value>,
-        ty: Type
+        args: Vec<(Type, Value)>,
+        ty: Type,
+        discard_value: bool
     },
     Label (String),
     Jmp (String),

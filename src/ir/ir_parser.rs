@@ -175,7 +175,7 @@ impl IrParser {
         Instruction::Op { vreg, kind, lhs, rhs, ty}
     }
 
-    fn parse_ins_call(&mut self, vreg: usize) -> Instruction {
+    fn parse_ins_call(&mut self, vreg: usize, discard_value: bool) -> Instruction {
         self.eat(TokenKind::Call);
 
         let ty = self.parse_type();
@@ -188,16 +188,16 @@ impl IrParser {
         let mut args = Vec::new();
 
         if self.peek().kind != TokenKind::Rparen {
-            args.push(self.parse_value());
+            args.push((self.parse_type(), self.parse_value()));
             while self.peek().kind == TokenKind::Comma {
                 self.eat(TokenKind::Comma);
-                args.push(self.parse_value());
+                args.push((self.parse_type(), self.parse_value()));
             }
         }
 
         self.eat(TokenKind::Rparen);
 
-        Instruction::Call { vreg, func, args, ty }
+        Instruction::Call { vreg, func, args, ty, discard_value }
     }
 
     fn parse_ins_jmp(&mut self) -> Instruction {
@@ -271,6 +271,7 @@ impl IrParser {
             TokenKind::Ret => self.parse_ins_ret(),
             TokenKind::Jmp => self.parse_ins_jmp(),
             TokenKind::Br => self.parse_ins_br(),
+            TokenKind::Call => self.parse_ins_call(0, true),
             TokenKind::Store => self.parse_ins_store(),
             TokenKind::Label => {
                 let label = self.next();
@@ -292,7 +293,7 @@ impl IrParser {
 
                 match self.peek().kind {
                     TokenKind::Copy => self.parse_ins_copy(vreg),
-                    TokenKind::Call => self.parse_ins_call(vreg),
+                    TokenKind::Call => self.parse_ins_call(vreg, false),
                     TokenKind::Alloc => self.parse_ins_alloc(vreg),
                     TokenKind::Load => self.parse_ins_load(vreg),
                     TokenKind::Add  | TokenKind::Sub  |
@@ -332,6 +333,21 @@ impl IrParser {
         self.eat(TokenKind::Lparen);
 
         let mut params = Vec::<Parameter>::new();
+
+        if is_extern {
+            while self.peek().kind != TokenKind::Rparen {
+                if self.peek().kind == TokenKind::Dots {
+                    self.next();
+                    params.push(Parameter { vreg: self.next_vreg(), ty: Type::I1, is_vaarg: true });
+                    break; // it must be the last parameter
+                }
+                params.push(Parameter { vreg: self.next_vreg(), ty: self.parse_type(), is_vaarg: false });
+
+                if self.peek().kind != TokenKind::Rparen {
+                    self.eat(TokenKind::Comma);
+                }
+            }
+        }
 
         if self.peek().kind != TokenKind::Rparen {
             let param = self.eat(TokenKind::Vreg);

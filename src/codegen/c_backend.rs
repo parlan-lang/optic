@@ -79,11 +79,15 @@ impl<'a> CBackend<'a> {
                 writeln!(header, "  {} vreg_{};", self.compile_type(ty), *vreg)?;
                 writeln!(body, "  vreg_{} = ({})(({}){} {} ({}){});", *vreg, self.compile_type(&res_ty), self.compile_type(ty), self.compile_value(lhs), op, self.compile_type(ty), self.compile_value(rhs))?;                
             }
-            Instruction::Call { vreg, func, args, ty } => {
-                let args = args.iter().map(|v| self.compile_value(v)).collect::<Vec<String>>().join(",");
+            Instruction::Call { vreg, func, args, ty, discard_value } => {
+                let args = args.iter().map(|a| format!("({}){}", self.compile_type(&a.0), self.compile_value(&a.1))).collect::<Vec<String>>().join(", ");
 
-                writeln!(header, "  {} vreg_{};", self.compile_type(ty), (*vreg))?;
-                writeln!(body, "  vreg_{} = ({}){}({});", (*vreg), self.compile_type(ty), func, args)?;
+                if *discard_value {
+                    writeln!(body, "  {}({});", func, args)?;
+                } else {
+                    writeln!(header, "  {} vreg_{};", self.compile_type(ty), (*vreg))?;
+                    writeln!(body, "  vreg_{} = ({}){}({});", (*vreg), self.compile_type(ty), func, args)?;
+                }
             }
             Instruction::Label(label) => {
                 writeln!(body, "L_{}:", label)?;

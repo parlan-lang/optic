@@ -223,7 +223,7 @@ impl ControlFlowGraph {
                     Instruction::Call { vreg, args, .. } => {
                         max = max.max(*vreg);
                         for arg in args {
-                            if let Value::Vreg(id) = arg { max = max.max(*id) }
+                            if let Value::Vreg(id) = arg.1 { max = max.max(id) }
                         }
                     }
                     _ => continue
