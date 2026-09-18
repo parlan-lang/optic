@@ -11,6 +11,6 @@ uint32_t square(uint32_t vreg_0) {
 uint32_t main() {
   uint32_t vreg_0;
 // BB_0:
-  vreg_0 = (uint32_t)square(2);
+  vreg_0 = (uint32_t)square((uint32_t)2);
   return (uint32_t)vreg_0;
 }

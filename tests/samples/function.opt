@@ -4,6 +4,6 @@ define @square(%n i32) i32 {
 }
 
 define @main() i32 {
-    %0 = call i32 @square(2)
+    %0 = call i32 @square(i32 2)
     ret i32 %0
 }
