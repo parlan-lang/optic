@@ -109,6 +109,10 @@ impl<'a> CBackend<'a> {
                 writeln!(header, "  {} vreg_{};", self.compile_type(ty), *vreg)?;
                 writeln!(body, "  vreg_{} = *( ({} *){} );", *vreg, self.compile_type(ty), self.compile_value(ptr))?;
             }
+            Instruction::Offset { vreg, ptr, idx, ty } => {
+                writeln!(header, "  void* vreg_{};", *vreg)?;
+                writeln!(body, "  vreg_{} = &(({} *){})[{}];", *vreg, self.compile_type(ty), self.compile_value(ptr), *idx)?;
+            }
             Instruction::Phi { .. } => {}
         }
 

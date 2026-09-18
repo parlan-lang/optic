@@ -261,6 +261,23 @@ impl IrParser {
         Instruction::Load { vreg, ptr, ty }
     }
 
+    fn parse_ins_offset(&mut self, vreg: usize) -> Instruction {
+        self.eat(TokenKind::Offset);
+
+        let ptr = self.parse_value();
+
+        self.eat(TokenKind::Comma);
+
+        let ty = self.parse_type();
+
+        self.eat(TokenKind::Comma);
+
+        let idx_tk = self.eat(TokenKind::IntLit);
+        let idx = self.src[idx_tk.get_span()].parse::<usize>().unwrap();
+
+        Instruction::Offset { vreg, ptr, idx, ty }
+    }
+
     /// Parses an instruction
     /// 
     /// Panics
@@ -296,6 +313,7 @@ impl IrParser {
                     TokenKind::Call => self.parse_ins_call(vreg, false),
                     TokenKind::Alloc => self.parse_ins_alloc(vreg),
                     TokenKind::Load => self.parse_ins_load(vreg),
+                    TokenKind::Offset => self.parse_ins_offset(vreg),
                     TokenKind::Add  | TokenKind::Sub  |
                     TokenKind::Mul  | TokenKind::Div  |
                     TokenKind::Ceq  | TokenKind::Cne  |

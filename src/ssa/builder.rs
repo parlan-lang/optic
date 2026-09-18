@@ -275,6 +275,16 @@ pub fn build_ssa(cfg: &mut ControlFlowGraph, param_types: &HashMap<Vreg, Type>) 
                     builder.write_variable(block_id, Vreg(*vreg), ssa_id);
                     *vreg = ssa_id.0;
                 }
+                Instruction::Offset { vreg, ptr, .. } => {
+                    if let Some(ptr_vreg) = ptr.as_vreg() {
+                        let ssa_id = builder.read_variable(&cfg.backward_edges, block_id, Vreg(ptr_vreg));
+                        *ptr = Value::Vreg(ssa_id.0);
+                    }
+                    let ssa_id = builder.new_value();
+                    var_types.insert(Vreg(*vreg), Type::Ptr); // it will always return a pointer
+                    builder.write_variable(block_id, Vreg(*vreg), ssa_id);
+                    *vreg = ssa_id.0;
+                }
                 Instruction::Label(_) | Instruction::Jmp(_) | Instruction::Phi { .. } => {}
             }
         }
@@ -345,6 +355,7 @@ pub fn build_ssa(cfg: &mut ControlFlowGraph, param_types: &HashMap<Vreg, Type>) 
                     resolve_val(val);
                 }
                 Instruction::Load { ptr, .. } => resolve_val(ptr),
+                Instruction::Offset { ptr, .. } => resolve_val(ptr),
                 Instruction::Phi { srcs, .. } => {
                     for src in srcs {
                         resolve_val(src);

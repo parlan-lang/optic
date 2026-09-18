@@ -99,6 +99,12 @@ pub enum Instruction {
         ptr: Value,
         ty: Type
     },
+    Offset {
+        vreg: usize,
+        ptr: Value,
+        idx: usize,
+        ty: Type
+    },
     Phi {
         vreg: usize,
         srcs: Vec<Value>,

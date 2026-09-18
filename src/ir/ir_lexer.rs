@@ -25,6 +25,7 @@ pub enum TokenKind {
     Alloc, 
     Store,
     Load,
+    Offset,
     Data,
     Constant,
 
@@ -141,6 +142,7 @@ impl IrLexer {
             b"alloc" => TokenKind::Alloc,
             b"store" => TokenKind::Store,
             b"load" => TokenKind::Load,
+            b"offset" => TokenKind::Offset,
             b"data" => TokenKind::Data,
             b"constant" => TokenKind::Constant,
             _ => TokenKind::Error
