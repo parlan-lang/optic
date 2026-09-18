@@ -16,7 +16,7 @@ Optic uses its own Intermediate Representation (IR). Here is an example of a bas
 
 ```
 define @main() i32 {
-    ret.i32 42
+    ret i32 42
 }
 ```
 

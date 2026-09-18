@@ -7,7 +7,7 @@ This is the official documentation of Optic's IR, here you will find a extensive
 - [Global Symbols & Virtual Registers](#global-symbols--virtual-registers)
 - [Type System](#type-system)
 - [Functions](#functions)
-  - [External Functions](#external-functions)
+  - [Extern Functions](#extern-functions)
   - [Variadic Functions](#variadic-functions)
 - [Instructions, Globals & Values](#instructions-globals--values)
   - [Values](#values)
@@ -26,14 +26,10 @@ A virtual register is what in high-level languages is called a variable, these a
 
 ## Type System
 
-Optic's IR is explictly-typed, these means every single instruction needs an explicit type. The type of an instruction can be specified by two ways depending on the type of the instruction.
+Optic's IR is *explictly-typed*, however it's not *strongly-typed*. This means the compiler does not perform any type-checking pass, and it is not planned to be added soon.
 
-A instruction can either compute & store a value, or execute an action:
-- **if the instruction computes & stores a value**: it always starts with the destination virtual register, followed by an assing symbol, a dot and the type. for example: `%vreg =.i32 copy 23` 
-- **if the instruction just executes an action:** the type is specified after the instruction mnemonic and a dot. for example: `ret.i32 42`
-
-> [!NOTE]
-> Optic doesn't currently features any kind of type checking, and it's not planned to add it for now. 
+Every instructions that produces or manipulates data needs a type, like `load`, `add`, etc. But instructions that doesn't manipulate data directly, like `jmp` or `br`, doesn't need an explicit type.  
+There are also some instructions that always produce a value of the same type. For example, `alloc` and `offset` always produces a pointer. And these instructions also need a type, but because they need to know with what data type they are working, even though they'll generate the exact same type as its output.
 
 ## Functions
 
@@ -42,19 +38,21 @@ This is a simple function in Optic's IR:
 
 ```
 define @main() i32 {
-    ret.i32 42
+    ret i32 42
 }
 ```
 
-### External Functions
+### Extern Functions
 
-You can define an external function using `extern`, for example:
+You can define an extern function by writing `extern` between `define` and the function's name, for example:
 
 ```
-define extern @printf(%fmt ptr, ...) i32
+define extern @printf(ptr, ...) i32
 ```
 
-An external function is a function which body *is not defined in the current file*. An external function cannot have a body, because it is supposed to be defined somewhere else.
+An extern function is a function which body *is not defined in the current file*. An extern function cannot have a body, because it is supposed to be defined somewhere else.
+
+The parameter list of extern functions only contains the types of the parameters, but not the name. 
 
 ### Variadic Functions
 
@@ -73,11 +71,13 @@ This is a list of all value's descriptions and multiple examples
 | Description | Example |
 | :-- | :-- |
 | A virtual register | `%x` |
-| A integer literal, prefix with `-` to denote a negative literal | `2`, `-1` |
+| An integer literal, prefix with `-` to denote a negative literal | `2`, `-1` |
+| An Floating point number literal | `0.1`, `25.5` |
+| A global symbol | `@pi` |
 
 ### Labels 
 
-A label is a tag that denotes a position in the IR, an instruction can jump conditionally or unconditionally to them.
+A label is a tag that denotes a position in the IR, an instruction can jump conditionally (with `br`) or unconditionally (with `jmp`) to them.
 
 A label starts with `#`, for example: `#my_label`
 
@@ -87,22 +87,26 @@ This is a list of all instructions, its mnemonics, syntax, description and an ex
 
 | Mnemonic | Syntax | Description | Example |
 | :-- | :-- | :-- | :-- |
-| `copy` | `copy VALUE` | Copies a value into a register | `%r =.i32 copy 42` |
-| `ret` | `ret.TYPE VALUE` | returns from the current function with a Value | `ret.i32 42` |
-| `add` | `add VALUE, VALUE` | adds two integer values | `%r =.i32 add 2, 2` |
-| `sub` | `sub VALUE, VALUE` | substracts two integer values | `%r =.i32 sub 2, 2` |
-| `mul` | `mul VALUE, VALUE` | multiplies two integer values | `%r =.i32 mul 2, 2` |
-| `div` | `div VALUE, VALUE` | divides two integer values (signed) | `%r =.i32 div 2, 2` |
-| `udiv` | `udiv VALUE, VALUE` | divides two integer values (unsigned) | `%r =.i32 udiv 2, 2` |
-| `call` | `call FUNC(VALUES,...)` | calls a function with the specified arguments | `%r =.i32 call @add(2, 2)` |
+| `copy` | `copy TYPE VALUE` | Copies a value into a register | `%r = copy i32 42` |
+| `ret` | `ret TYPE VALUE` | returns from the current function with a Value | `ret i32 42` |
+| `add` | `add TYPE VALUE, VALUE` | adds two integer values | `%r = add i32 2, 2` |
+| `sub` | `sub TYPE VALUE, VALUE` | substracts two integer values | `%r = sub i32 2, 2` |
+| `mul` | `mul TYPE VALUE, VALUE` | multiplies two integer values | `%r = mul i32 2, 2` |
+| `div` | `div TYPE VALUE, VALUE` | divides two integer values (signed) | `%r = div i32 2, 2` |
+| `udiv` | `udiv TYPE VALUE, VALUE` | divides two integer values (unsigned) | `%r = udiv i32 2, 2` |
+| `call` | `call TYPE FUNC(TYPE VALUES, ...)` | calls a function with the specified arguments | `%r = call i32 @add(i32 2, i32 2)` |
 | `jmp` | `jmp LABEL` | jumps inconditionaly to a label | `jmp #end` |
 | `br` | `br VREG, LABEL, LABEL` | jumps conditionaly to a label or another based on the value on the register | `br %cond, #then, #else` |
+| `alloc` | `alloc TYPE[, NUM]` | allocates enough size in the stack to store a value of type `TYPE`, `NUM`-times (or 1 if not provided) | `%ptr = alloc i32, 5` |
+| `store` | `store TYPE PTR, VALUE` | stores `VALUE` (of type `TYPE`) inside `PTR` | `store i32 %ptr, 5` |
+| `load` | `load TYPE PTR` | loads the value of type `TYPE` stored in `PTR` | `%r = load i32 %ptr` |
+| `offset` | `offset PTR, TYPE, IDX` | calculates the offset of an element at index `IDX` in an array of values of type `TYPE`. `PTR` is the base pointer of the array | `%r = offset %ptr, i32, 0` | 
 
-#### `cmp` instruction family
+#### comparison instructions family
 
-The `cmp` instruction is a special case, because is not a single instruction, it's a "family of instructions".
+Comparison instructios are a special case, because is not a single instruction, it's a "family of instructions".
 
-All of them return a boolean value of type `i1`, and has a special syntax: `cmp.KIND.TYPE VALUE, VALUE`, where `TYPE` is the type of the values. these are the possible `KIND`s of comparitions:
+All of them return a boolean value of type `i1`, and has a special syntax: `cPREFIX TYPE VALUE, VALUE`, where `TYPE` is the type of the values and the `PREFIX` is the type of comparison. These are all the allowed prefixes: 
 
 | Kind | Meaning |
 | :-- | :-- |
@@ -111,14 +115,14 @@ All of them return a boolean value of type `i1`, and has a special syntax: `cmp.
 | `slt`/`ult` | signed/unsigned less than |
 | `sgt`/`ugt` | signed/unsigned greater than |
 
-This is a simple example: `%r =.i1 cmp.eq.i32 %x, 5`
+This is a simple example: `%r = ceq i32 %x, 5`
 
 ### Globals
 
-You can define a global variable using the `data` instruction. this is an example:
+You can define a global variable writing `data`, optionally followed by `constant`, the name of the global (which needs to start with `@`), a `=` sign, and brackets containing the data. this is an example:
 
 ```
-data @msg =.str "Hello, World!\0"
+data @msg = { ascii "Hello, World!", i1 0 }
 ```
 
-A global variable can have any value that can be know at compile-time, like a number or a literal string. Currently there is a string type, but it may be removed later
+A global variable only stores raw bytes, this means the example above is storing an array of 14 bytes. To access the data inside of a global variable you need to use the `load` instruction, because a global variable is just a memory address.
