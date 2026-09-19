@@ -21,9 +21,9 @@ pub struct Module {
 }
 
 impl Module {
-    pub fn build_cfg(&mut self) {
+    pub fn build_cfg(&mut self, file_name: &str) {
         for func in &mut self.functions {
-            let mut builder = CfgBuilder::new(func);
+            let mut builder = CfgBuilder::new(func, file_name);
             builder.build_cfg();
         }
     }

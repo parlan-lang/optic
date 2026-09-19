@@ -10,20 +10,23 @@ use crate::module::{
     function::*,
 };
 use crate::cfg::*;
+use crate::error;
 
 pub struct IrParser {
     lexer: IrLexer,
     src: String,
     curr_vreg: usize,
+    file_name: String,
     local: HashMap<String, usize> // local scope of the current function
 }
 
 impl IrParser {
-    pub fn new(src: &str) -> Self {
+    pub fn new(src: &str, file_name: String) -> Self {
         IrParser {
-            lexer: IrLexer::new(src),
+            lexer: IrLexer::new(src, file_name.clone()),
             src: src.to_string(),
             curr_vreg: 0,
+            file_name: file_name,
             local: HashMap::new()
         }
     }
@@ -53,10 +56,16 @@ impl IrParser {
     /// # Panics
     /// 
     /// This will `panic` if the next [`Token`] does not match the expected type 
+    #[track_caller]
     fn eat(&mut self, kind: TokenKind) -> Token {
         if self.peek().kind != kind {
-            eprintln!("error: expected token of kind {:?}, found `{:?}` instead", kind, self.peek().kind);
-            panic!();
+            let tk = self.peek();
+            error!(
+                &self.file_name, &self.src,
+                &tk,
+                "expected token {:?}, found {:?} instead",
+                kind, tk.kind
+            );
         }
         self.next()
     }
@@ -66,6 +75,7 @@ impl IrParser {
     /// Panics
     /// 
     /// This will `panic` in case the next [`Token`] is not a valid [`Value`]
+    #[track_caller]
     fn parse_value(&mut self) -> Value {
         let tk = self.next();
         match tk.kind {
@@ -88,8 +98,13 @@ impl IrParser {
                 match self.local.get(vreg) {
                     Some(vreg) => Value::Vreg(*vreg),
                     None => {
-                        eprintln!("error: undeclared virtual register {:?}", vreg);
-                        panic!()
+                        error!(
+                            &self.file_name,
+                            &self.src,
+                            &tk,
+                            "undeclared virtual register `%{}`", vreg
+                        );
+                        unreachable!()
                     }
                 }
             }
@@ -99,8 +114,13 @@ impl IrParser {
                 GlobSym(name.to_string())
             }
             _ => {
-                eprintln!("error: expected a value, found {:?} instead", tk.kind);
-                panic!()
+                error!(
+                    &self.file_name,
+                    &self.src,
+                    &tk,
+                    "expected a value, found {:?} instead", tk.kind
+                );
+                unreachable!()
             }
         }
     }
@@ -110,8 +130,10 @@ impl IrParser {
     /// Panics
     /// 
     /// This will `panic` in case the next [`Token`] is not a valid [`Type`] 
+    #[track_caller]
     fn parse_type(&mut self) -> Type {
-        match self.next().kind {
+        let tk = self.next();
+        match tk.kind {
             TokenKind::I32 => Type::I32,
             TokenKind::I1 => Type::I1,
             TokenKind::F32 => Type::F32,
@@ -119,8 +141,13 @@ impl IrParser {
             TokenKind::Ascii => Type::Ascii,
             TokenKind::Void => Type::Void,
             _ => {
-                eprintln!("error: expected a type, found {:?} instead", self.peek().kind);
-                panic!()
+                error!(
+                    &self.file_name,
+                    &self.src,
+                    &tk,
+                    "expected a type, found {:?} instead", tk.kind
+                );
+                unreachable!()
             }
         }
     }
@@ -151,7 +178,8 @@ impl IrParser {
     }
 
     fn parse_ins_op(&mut self, vreg: usize) -> Instruction {
-        let kind = match self.next().kind {
+        let kind_tk = self.next();
+        let kind = match kind_tk.kind {
             TokenKind::Add => OpKind::Add,
             TokenKind::Sub => OpKind::Sub,
             TokenKind::Mul => OpKind::Mul,
@@ -163,7 +191,15 @@ impl IrParser {
             TokenKind::Cult => OpKind::CmpUlt,
             TokenKind::Csgt => OpKind::CmpSgt,
             TokenKind::Cugt => OpKind::CmpUgt,
-            _ => panic!()
+            _ => {
+                error!(
+                    &self.file_name,
+                    &self.src,
+                    &kind_tk,
+                    "expected an operator, found {:?} instead", kind_tk.kind
+                );
+                unreachable!()
+            }
         };
 
         let ty = self.parse_type();
@@ -308,7 +344,8 @@ impl IrParser {
 
                 self.eat(TokenKind::Assing);
 
-                match self.peek().kind {
+                let tk = self.peek();
+                match tk.kind {
                     TokenKind::Copy => self.parse_ins_copy(vreg),
                     TokenKind::Call => self.parse_ins_call(vreg, false),
                     TokenKind::Alloc => self.parse_ins_alloc(vreg),
@@ -320,14 +357,25 @@ impl IrParser {
                     TokenKind::Cslt | TokenKind::Cult |
                     TokenKind::Csgt | TokenKind::Cugt => self.parse_ins_op(vreg),
                     _ => {
-                        eprintln!("error: expected an instruction, found {:?} instead", self.peek().kind);
-                        panic!()
+                        error!(
+                            &self.file_name,
+                            &self.src,
+                            &tk,
+                            "expected an instruction, found {:?} instead", &tk.kind
+                        );
+                        unreachable!()
                     }
                 }
             }
             _ => {
-                eprintln!("error: expected an instruction, found {:?} instead", self.peek().kind);
-                panic!()
+                let tk = self.peek();
+                error!(
+                    &self.file_name,
+                    &self.src,
+                    &tk,
+                     "expected an instruction, found {:?} instead", &tk.kind
+                );
+                unreachable!()
             }
         }
     }
@@ -421,6 +469,7 @@ impl IrParser {
         self.eat(TokenKind::Lbrace);
 
         while self.peek().kind != TokenKind::Rbrace {
+            let tk = self.peek();
             match self.parse_type() {
                 Type::I32 => {
                     let tk = self.eat(TokenKind::IntLit);
@@ -438,12 +487,26 @@ impl IrParser {
                     let tk = self.eat(TokenKind::IntLit);
                     self.src[tk.get_span()].parse::<f32>().unwrap().to_le_bytes().iter().for_each(|b| bytes.push(*b));
                 },
-                Type::Ptr => panic!("error: data instructions don't support pointers"),
+                Type::Ptr => {
+                    error!(
+                        &self.file_name,
+                        &self.src,
+                        &tk,
+                        "globals cannot store a pointer value"
+                    );
+                },
                 Type::Ascii => {
                     let tk = self.eat(TokenKind::AsciiLit);
                     self.src[tk.get_span()].as_bytes().iter().for_each(|b| bytes.push(*b));
                 },
-                Type::Void => panic!("error: data instructions don't support void"),
+                Type::Void => {
+                    error!(
+                        &self.file_name,
+                        &self.src,
+                        &tk,
+                        "globals cannot store a void value"
+                    );
+                },
             };
 
             if self.peek().kind != TokenKind::Rbrace {
@@ -486,8 +549,13 @@ impl IrParser {
                 TokenKind::Data => globals.push(self.parse_global()),
                 TokenKind::Define => functions.push(self.parse_function()),
                 _ => {
-                    eprintln!("error: expected `define` or `data`, found {:?}", self.peek());
-                    panic!();
+                    let tk = self.peek();
+                    error!(
+                        &self.file_name,
+                        &self.src,
+                        &tk,
+                        "expected `define` or `data`, found {:?}", tk 
+                    );
                 }
             }
         }

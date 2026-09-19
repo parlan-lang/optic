@@ -152,8 +152,8 @@ impl<'a> CBackend<'a> {
             }
         }
 
-        body.write(header.buffer()).unwrap();
-        body.write(local_body.buffer()).unwrap();
+        body.write(header.buffer())?;
+        body.write(local_body.buffer())?;
         writeln!(body, "}}")?;
         
         Ok(())
@@ -188,17 +188,32 @@ impl<'a> CBackend<'a> {
             r#"// Module "{}"
 #include <stdint.h>"#, 
             self.module.name
-        ).unwrap();
+        ).unwrap_or_else(|e| {
+            eprintln!("\x1b[1;31merror:\x1b[0m {}", e);
+            std::process::exit(1);
+        });
         
         for global in &self.module.globals {
-            self.compile_global(global, &mut header).unwrap();
+            self.compile_global(global, &mut header).unwrap_or_else(|e| {
+                eprintln!("\x1b[1;31merror:\x1b[0m {}", e);
+                std::process::exit(1);
+            });
         }
 
         for func in &self.module.functions {
-            self.compile_func(func,&mut body).unwrap();
+            self.compile_func(func,&mut body).unwrap_or_else(|e| {
+                eprintln!("\x1b[1;31merror:\x1b[0m {}", e);
+                std::process::exit(1);
+            });
         }
 
-        self.out.write(header.buffer()).unwrap();
-        self.out.write(body.buffer()).unwrap();
+        self.out.write(header.buffer()).unwrap_or_else(|e| {
+            eprintln!("\x1b[1;31merror:\x1b[0m {}", e);
+            std::process::exit(1);
+        });
+        self.out.write(body.buffer()).unwrap_or_else(|e| {
+            eprintln!("\x1b[1;31merror:\x1b[0m {}", e);
+            std::process::exit(1);
+        });
     }
 }

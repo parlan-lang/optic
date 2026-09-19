@@ -1,5 +1,7 @@
 //! This module implements the lexer/tokenizer of the IR
 
+use crate::error;
+
 /// Represents the type of the token
 /// 
 /// A [`Token`] can have one of several types (e.g., [`TokenKind::Define`]), and this enum represents
@@ -91,13 +93,15 @@ pub struct IrLexer {
     /// the source code as bytes
     source: Vec<u8>,
     cursor: u32,
+    file_name: String
 }
 
 impl IrLexer {
-    pub fn new(source: &str) -> Self {
+    pub fn new(source: &str, file_name: String) -> Self {
         return IrLexer {
             source: source.as_bytes().to_vec(),
-            cursor: 0
+            cursor: 0,
+            file_name
         };
     }
 
@@ -266,15 +270,28 @@ impl IrLexer {
                 let token_type = self.get_keyword(start);
 
                 if token_type == TokenKind::Error {
-                    eprintln!("error: unknown instruction nmemonic `{}`", str::from_utf8(&self.source[start as usize..self.cursor as usize]).unwrap());
-                    return Token::new((start,self.cursor), TokenKind::Error)
+                    error!(
+                        &self.file_name, 
+                        str::from_utf8(&self.source).unwrap(),
+                        &Token { span: (start, self.cursor), kind: TokenKind::Error },
+                        "unknown instruction nmemonic `{}`",
+                        str::from_utf8(&self.source[start as usize..self.cursor as usize]).unwrap_or_else(|e| {
+                            eprintln!("\x1b[1;31merror:\x1b[0m {}", e);
+                            std::process::exit(1);
+                        })
+                    );
                 }
 
                 Token::new((start, self.cursor), token_type)
             }
             _ => {
-                eprintln!("error: unknown start of token `{}`", self.peek() as char);
-                Token::new((0,00), TokenKind::Error)
+                error!(
+                    &self.file_name,
+                    str::from_utf8(&self.source).unwrap(),
+                    &Token { span: (self.cursor, self.cursor + 1), kind: TokenKind::Error },
+                    "unknown start of token: `{}`", self.peek() as char
+                );
+                unreachable!()
             }
         }
     }

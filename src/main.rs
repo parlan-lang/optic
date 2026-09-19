@@ -1,4 +1,5 @@
 mod ir;
+mod error;
 mod module;
 mod cfg;
 mod ssa;
@@ -16,7 +17,6 @@ fn format_time(secs: f32, total: f32) -> String {
     format!("{:>5.1} {} ({:>5.1}%)", format_sec.0, format_sec.1, (secs / total) * 100.0)
     
 }
-
 fn main() {
     let mut input = "";
     let mut output = "";
@@ -53,14 +53,14 @@ Options:
 
     let source = std::fs::read_to_string(input).expect("error: could not open the source file");
 
-    let mut parser = ir::ir_parser::IrParser::new(&source);
+    let mut parser = ir::ir_parser::IrParser::new(&source, input.to_string());
 
     let mut start = Instant::now();
     let mut module = parser.parse_module(input);
     let parse_time = start.elapsed().as_secs_f32();
 
     start = Instant::now();
-    module.build_cfg();
+    module.build_cfg(input);
     let cfg_build_time = start.elapsed().as_secs_f32();
 
     start = Instant::now();

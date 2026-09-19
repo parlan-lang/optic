@@ -8,14 +8,16 @@ use crate::module::function::*;
 
 pub struct CfgBuilder<'a> {
     func: &'a mut Function,
-    curr_block: Option<BlockId>
+    curr_block: Option<BlockId>,
+    file_name: &'a str,
 }
 
 impl<'a> CfgBuilder<'a> {
-    pub fn new(func: &'a mut Function) -> Self {
+    pub fn new(func: &'a mut Function, file_name: &'a str) -> Self {
         CfgBuilder { 
             func,
-            curr_block: None
+            curr_block: None,
+            file_name
         }
     }
 
@@ -99,7 +101,15 @@ impl<'a> CfgBuilder<'a> {
                         }
                     }
                     Instruction::Ret { .. } => {}
-                    _ => panic!("error: one of the basic blocks does not end with a terminator.")
+                    _ => {
+                        eprintln!(
+                            "\x1b[1;31merror at\x1b[0m `{}` \x1b[90m(in function `@{}`)\x1b[0m : basic block `#{}` doesn't end with a terminator",
+                            self.file_name,
+                            self.func.name,
+                            cfg.blocks[i].instructions.first().unwrap().get_label_name().unwrap()
+                        );
+                        std::process::exit(1);
+                    }
                 }
             }
         }

@@ -107,9 +107,7 @@ impl ControlFlowGraph {
 
         for (src, dst) in critical_edges {
             // 1. Get the label string of dst
-            let dst_label = self
-                .get_block_label(dst.0)
-                .unwrap_or_else(|| panic!("internal error: block with id {} is missing an Instruction::Label", dst.0));
+            let dst_label = self.get_block_label(dst.0).unwrap();
 
             // 2. Create new block with its own label and a Jmp to dst
             let blk = self.create_block();
