@@ -18,6 +18,12 @@ pub enum TokenKind {
     Mul,
     Div,
     Udiv,
+    Neg,
+    Fadd, 
+    Fsub,
+    Fmul, 
+    Fdiv,
+    Fneg,
     Call,
     Jmp,
     Ceq, Cne,
@@ -137,6 +143,12 @@ impl IrLexer {
             b"mul" => TokenKind::Mul,
             b"div" => TokenKind::Div,
             b"udiv" => TokenKind::Udiv,
+            b"neg" => TokenKind::Neg,
+            b"fadd" => TokenKind::Fadd,
+            b"fsub" => TokenKind::Fsub,
+            b"fmul" => TokenKind::Fmul,
+            b"fdiv" => TokenKind::Fdiv,
+            b"fneg" => TokenKind::Fneg,
             b"call" => TokenKind::Call,
             b"jmp" => TokenKind::Jmp,
             b"ceq" => TokenKind::Ceq, b"cne" => TokenKind::Cne,
@@ -243,11 +255,14 @@ impl IrLexer {
             }
             b'-' => {
                 let start = self.cursor;
-                self.cursor += 1;
+                let mut dot = false;
 
-                while !self.is_at_end() && self.is_numeric() { self.cursor += 1; }
+                while !self.is_at_end() && self.is_numeric() || self.peek() == b'.' { 
+                    if self.peek() == b'.' { dot = true; }
+                    self.cursor += 1;
+                 }
 
-                Token::new((start,self.cursor), TokenKind::IntLit)
+                Token::new((start,self.cursor), if dot { TokenKind::FloatLit } else { TokenKind::IntLit })
             }
             b'0'..=b'9' => {
                 let start = self.cursor;

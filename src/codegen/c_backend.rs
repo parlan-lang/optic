@@ -66,15 +66,22 @@ impl<'a> CBackend<'a> {
             }
             Instruction::Op { vreg, kind, lhs, rhs, ty } => {
                 let (op, res_ty) = match kind {
-                    OpKind::Add => ("+", *ty),
-                    OpKind::Sub => ("-", *ty),
-                    OpKind::Mul => ("*", *ty),
-                    OpKind::Div | OpKind::Udiv => ("/", *ty),
+                    OpKind::Add | OpKind::Fadd => ("+", *ty),
+                    OpKind::Sub | OpKind::Fsub => ("-", *ty),
+                    OpKind::Mul | OpKind::Fmul=> ("*", *ty),
+                    OpKind::Div | OpKind::Udiv | OpKind::Fdiv => ("/", *ty),
                     OpKind::CmpEq => ("==", Type::I1), 
                     OpKind::CmpNe => ("!=", Type::I1),
                     OpKind::CmpSlt | OpKind::CmpUlt => ("<", Type::I1),
                     OpKind::CmpSgt | OpKind::CmpUgt => (">", Type::I1),
+                    OpKind::Neg | OpKind::Fneg => ("-", *ty),
                 };
+
+                if op == "-" {
+                    writeln!(header, "  {} vreg_{};", self.compile_type(ty), *vreg)?;
+                    writeln!(body, "  vreg_{} = -(({}){});", *vreg, self.compile_type(ty), self.compile_value(lhs))?;
+                    return Ok(());
+                }
 
                 writeln!(header, "  {} vreg_{};", self.compile_type(ty), *vreg)?;
                 writeln!(body, "  vreg_{} = ({})(({}){} {} ({}){});", *vreg, self.compile_type(&res_ty), self.compile_type(ty), self.compile_value(lhs), op, self.compile_type(ty), self.compile_value(rhs))?;                

@@ -185,6 +185,12 @@ impl IrParser {
             TokenKind::Mul => OpKind::Mul,
             TokenKind::Div => OpKind::Div,
             TokenKind::Udiv => OpKind::Udiv,
+            TokenKind::Fadd => OpKind::Fadd,
+            TokenKind::Fsub => OpKind::Fsub,
+            TokenKind::Fmul => OpKind::Fmul,
+            TokenKind::Fdiv => OpKind::Fdiv,
+            TokenKind::Neg => OpKind::Neg,
+            TokenKind::Fneg => OpKind::Fneg,
             TokenKind::Ceq => OpKind::CmpEq,
             TokenKind::Cne => OpKind::CmpNe,
             TokenKind::Cslt => OpKind::CmpSlt,
@@ -205,6 +211,11 @@ impl IrParser {
         let ty = self.parse_type();
 
         let lhs = self.parse_value();
+
+        if kind == OpKind::Neg || kind == OpKind::Fneg {
+            return Instruction::Op { vreg, kind, lhs, rhs: Value::Void, ty }
+        }
+
         self.eat(TokenKind::Comma);
         let rhs = self.parse_value();
 
@@ -353,9 +364,13 @@ impl IrParser {
                     TokenKind::Offset => self.parse_ins_offset(vreg),
                     TokenKind::Add  | TokenKind::Sub  |
                     TokenKind::Mul  | TokenKind::Div  |
-                    TokenKind::Ceq  | TokenKind::Cne  |
-                    TokenKind::Cslt | TokenKind::Cult |
-                    TokenKind::Csgt | TokenKind::Cugt => self.parse_ins_op(vreg),
+                    TokenKind::Udiv | TokenKind::Neg  | 
+                    TokenKind::Fadd | TokenKind::Fsub | 
+                    TokenKind::Fmul | TokenKind::Fdiv | 
+                    TokenKind::Fneg | TokenKind::Ceq  | 
+                    TokenKind::Cne  | TokenKind::Cslt | 
+                    TokenKind::Cult | TokenKind::Csgt | 
+                    TokenKind::Cugt => self.parse_ins_op(vreg),
                     _ => {
                         error!(
                             &self.file_name,
