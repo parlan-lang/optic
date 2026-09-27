@@ -195,8 +195,14 @@ impl IrParser {
             TokenKind::Cne => OpKind::CmpNe,
             TokenKind::Cslt => OpKind::CmpSlt,
             TokenKind::Cult => OpKind::CmpUlt,
-            TokenKind::Csgt => OpKind::CmpSgt,
-            TokenKind::Cugt => OpKind::CmpUgt,
+            TokenKind::Fcoeq => OpKind::FCmpOEq,
+            TokenKind::Fcone => OpKind::FCmpONe,
+            TokenKind::Fcolt => OpKind::FCmpOlt,
+            TokenKind::Fcueq => OpKind::FCmpUEq,
+            TokenKind::Fcune => OpKind::FCmpUNe,
+            TokenKind::Fcult => OpKind::FCmpUlt,
+            TokenKind::Fcord => OpKind::FCmpOrd,
+            TokenKind::Fcuno => OpKind::FCmpUno,
             _ => {
                 error!(
                     &self.file_name,
@@ -362,15 +368,18 @@ impl IrParser {
                     TokenKind::Alloc => self.parse_ins_alloc(vreg),
                     TokenKind::Load => self.parse_ins_load(vreg),
                     TokenKind::Offset => self.parse_ins_offset(vreg),
-                    TokenKind::Add  | TokenKind::Sub  |
-                    TokenKind::Mul  | TokenKind::Div  |
-                    TokenKind::Udiv | TokenKind::Neg  | 
-                    TokenKind::Fadd | TokenKind::Fsub | 
-                    TokenKind::Fmul | TokenKind::Fdiv | 
-                    TokenKind::Fneg | TokenKind::Ceq  | 
-                    TokenKind::Cne  | TokenKind::Cslt | 
-                    TokenKind::Cult | TokenKind::Csgt | 
-                    TokenKind::Cugt => self.parse_ins_op(vreg),
+                    TokenKind::Add   | TokenKind::Sub   |
+                    TokenKind::Mul   | TokenKind::Div   |
+                    TokenKind::Udiv  | TokenKind::Neg   | 
+                    TokenKind::Fadd  | TokenKind::Fsub  | 
+                    TokenKind::Fmul  | TokenKind::Fdiv  | 
+                    TokenKind::Fneg  | TokenKind::Ceq   | 
+                    TokenKind::Cne   | TokenKind::Cslt  | 
+                    TokenKind::Cult  | TokenKind::Fcoeq |
+                    TokenKind::Fcone | TokenKind::Fcolt |
+                    TokenKind::Fcord | TokenKind::Fcueq |
+                    TokenKind::Fcult | TokenKind::Fcune |
+                    TokenKind::Fcuno => self.parse_ins_op(vreg),
                     _ => {
                         error!(
                             &self.file_name,

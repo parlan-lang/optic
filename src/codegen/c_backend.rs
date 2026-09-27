@@ -65,26 +65,42 @@ impl<'a> CBackend<'a> {
                 writeln!(body, "  vreg_{} = ({}){};", *vreg, self.compile_type(ty), self.compile_value(val))?;
             }
             Instruction::Op { vreg, kind, lhs, rhs, ty } => {
+                let ty = self.compile_type(ty);
+                let lhs = self.compile_value(lhs);
+                let rhs = self.compile_value(rhs);
                 let (op, res_ty) = match kind {
-                    OpKind::Add | OpKind::Fadd => ("+", *ty),
-                    OpKind::Sub | OpKind::Fsub => ("-", *ty),
-                    OpKind::Mul | OpKind::Fmul=> ("*", *ty),
-                    OpKind::Div | OpKind::Udiv | OpKind::Fdiv => ("/", *ty),
-                    OpKind::CmpEq => ("==", Type::I1), 
-                    OpKind::CmpNe => ("!=", Type::I1),
-                    OpKind::CmpSlt | OpKind::CmpUlt => ("<", Type::I1),
-                    OpKind::CmpSgt | OpKind::CmpUgt => (">", Type::I1),
-                    OpKind::Neg | OpKind::Fneg => ("-", *ty),
+                    OpKind::Add | OpKind::Fadd => ("+", ty),
+                    OpKind::Sub | OpKind::Fsub => ("-", ty),
+                    OpKind::Mul | OpKind::Fmul=> ("*", ty),
+                    OpKind::Div | OpKind::Udiv | OpKind::Fdiv => ("/", ty),
+                    OpKind::CmpEq => ("==", "bool"), 
+                    OpKind::CmpNe => ("!=", "bool"),
+                    OpKind::CmpSlt | OpKind::CmpUlt => ("<", "bool"),
+                    OpKind::Neg | OpKind::Fneg => ("-", ty),
+                    _ => ("f", ty)
                 };
 
+                writeln!(header, "  {ty} vreg_{};", *vreg)?;
+
                 if op == "-" {
-                    writeln!(header, "  {} vreg_{};", self.compile_type(ty), *vreg)?;
-                    writeln!(body, "  vreg_{} = -(({}){});", *vreg, self.compile_type(ty), self.compile_value(lhs))?;
+                    writeln!(body, "  vreg_{} = -(({ty}){lhs});", *vreg)?;
+                    return Ok(());
+                } else if op == "f" {
+                    let op = match kind {
+                        OpKind::FCmpOEq => format!("({ty}){lhs} == ({ty}){rhs}"),
+                        OpKind::FCmpONe => format!("islessgreater(({ty}){lhs}, ({ty}){rhs})"),
+                        OpKind::FCmpOlt => format!("isless(({ty}){lhs}, ({ty}){rhs})"),
+                        OpKind::FCmpUEq => format!("isunordered(({ty}){lhs}, ({ty}){rhs}) || ({ty}){lhs} == ({ty}){rhs}"),
+                        OpKind::FCmpUNe => format!("({ty}){lhs} != ({ty}){rhs}"),
+                        OpKind::FCmpUlt => format!("!isgreaterequal(({ty}){lhs}, ({ty}){rhs})"),
+                        OpKind::FCmpOrd => format!("!isunordered(({ty}){lhs}, ({ty}){rhs})"),
+                        OpKind::FCmpUno => format!("isunordered(({ty}){lhs}, ({ty}){rhs})"),
+                        _ => unreachable!()
+                    };
+                    writeln!(body, "  vreg_{} = ({res_ty})({op});", *vreg)?;
                     return Ok(());
                 }
-
-                writeln!(header, "  {} vreg_{};", self.compile_type(ty), *vreg)?;
-                writeln!(body, "  vreg_{} = ({})(({}){} {} ({}){});", *vreg, self.compile_type(&res_ty), self.compile_type(ty), self.compile_value(lhs), op, self.compile_type(ty), self.compile_value(rhs))?;                
+                writeln!(body, "  vreg_{} = ({res_ty})(({ty}){lhs} {op} ({ty}){rhs});", *vreg)?;                
             }
             Instruction::Call { vreg, func, args, ty, discard_value } => {
                 let args = args.iter().map(|a| format!("({}){}", self.compile_type(&a.0), self.compile_value(&a.1))).collect::<Vec<String>>().join(", ");
@@ -193,7 +209,8 @@ impl<'a> CBackend<'a> {
         
         writeln!(header, 
             r#"// Module "{}"
-#include <stdint.h>"#, 
+#include <stdint.h>
+#include <math.h>"#, 
             self.module.name
         ).unwrap_or_else(|e| {
             eprintln!("\x1b[1;31merror:\x1b[0m {}", e);

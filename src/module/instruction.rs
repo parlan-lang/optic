@@ -51,7 +51,11 @@ pub enum OpKind {
     Fneg,
     CmpEq, CmpNe,
     CmpSlt, CmpUlt,
-    CmpSgt, CmpUgt,
+    FCmpOEq, FCmpONe,
+    FCmpOlt,
+    FCmpUEq, FCmpUNe,
+    FCmpUlt,
+    FCmpOrd, FCmpUno,
 }
 
 /// Represents a single instruction and its data
