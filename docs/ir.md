@@ -1,128 +1,268 @@
-# Optic's IR Documentation
+# **Optic IR Documentation**
 
-This is the official documentation of Optic's IR, here you will find a extensive especification of every you need to know about it.
+Welcome to the official documentation for Optic IR—A low-level, platform-agnostic intermediate representation used by the Optic compilation backend
 
-## Table Of Contents
+Here you willl find a complete technical specification and reference guide for working with Opti IR, with examples and detailed explanantions about everything you need to know about Optic IR. 
 
-- [Global Symbols & Virtual Registers](#global-symbols--virtual-registers)
-- [Type System](#type-system)
-- [Functions](#functions)
-  - [Extern Functions](#extern-functions)
-  - [Variadic Functions](#variadic-functions)
-- [Instructions, Globals & Values](#instructions-globals--values)
-  - [Values](#values)
-  - [Instructions](#instructions)
-  - [Globals](#globals)
+> [!WARNING]
+> *Optic is still in early-stage development. The IR is not stable yet, so its format, syntax, and features may change dramatically between versions*
 
+---
 
-> [!NOTE]
-> Currently, Optic is under active, early-stage development, this mean the IR can change dramatically between diferent versions.
+# Table Of Contents
 
-## Global Symbols & Virtual Registers
+1. [Program Structure](#1-program-structure)
+   - [Modules](#modules)
+   - [Globals](#globals)
+   - [Functions](#functions)
+   - [Basic Blocks](#basic-blocks)
+2. [Type System](#2-type-system)
+3. [Values & Literals](#3-values--literals)
+4. [Instruction Set Reference]()
+   - [Arithmetic Operations](#arithmetic-operations)
+   - [Comparison Operations](#comparison-operations)
+   - [Terminator/Branching Operations](#terminatorbranching-instructions)
+   - [Memory operations](#memory-operations)
+   - [Function Calls](#function-calls)
+5. [IR Invariants & Correctness](#ir-invariants--correctness)
+6. [Complete Example](#complete-example)
+  
+---
 
-A global symbol is one that can be accessed from anywhere from the current module, these always start with `@`. A global symbol can be a function or a global variable.
+# 1. Program Structure
 
-A virtual register is what in high-level languages is called a variable, these always start with `%`. you can define an infinite number of virtual registers, and unlike other IRs (such as LLVM's) Optic's IR *is not* in SSA (Static Single Assignment) form, this means you can reassing a virtual register anytime.
+## Modules
 
-## Type System
+A module is what we call a *compilation-unit*, this means that every module is compiled separately from others. Every module is contained by a separated IR file. 
 
-Optic's IR is *explictly-typed*, however it's not *strongly-typed*. This means the compiler does not perform any type-checking pass, and it is not planned to be added soon.
+Currently, Optic's CLI (Command Line Interface) doesn't support compiling multiples files at the same time. However, you can compile two modules separately and link them with each other using an external linker.
 
-Every instructions that produces or manipulates data needs a type, like `load`, `add`, etc. But instructions that doesn't manipulate data directly, like `jmp` or `br`, doesn't need an explicit type.  
-There are also some instructions that always produce a value of the same type. For example, `alloc` and `offset` always produces a pointer. And these instructions also need a type, but because they need to know with what data type they are working, even though they'll generate the exact same type as its output.
+## Globals
+
+A module can contain multiple *globals*, which are essenctially equivalent to global variables in higher-level languages like C. A global only contains raw bytes, it doesn't actually have a concrete type, and they're accesed as pointers by memory operations.
+
+This is an example of a global definition:
+```
+data constant @PI = { f32 3.14159 }
+```
+
+We use the `data` keyword, the name of the global which must start with `@`, and the byte section.  
+The byte section is enclosed by brackets `{}`, and contains values of form `TYPE VALUE` separated by commas, you can put as many of these as you want. All of these values will be converted into raw bytes, like an array.
+
+You also have the `ascii` type, which cannot be used on any place other than a global. You type `ascii` followed by a string enclosed by quotes `"`, inside the global's byte section. For example:
+```
+data constant @hello = { ascii "Hello, World!", i1 0 } // null terminated
+```
 
 ## Functions
 
-Functions are defined with the `define` instruction, followed by the name, the parameter list, the return type and the function's body. 
-This is a simple function in Optic's IR:
-
+Functions in Optic IR are the same as in other high-level languages. This is an example:
 ```
-define @main() i32 {
-    ret i32 42
+define @square(%x i32) i32 {
+  %0 = mul i32 %x, %x
+  ret i32 %0
 }
 ```
 
+We define a function using the `define` keyword, the name of the function which must start with `@`, the parameter list, the return type and the function body.  
+
 ### Extern Functions
 
-You can define an extern function by writing `extern` between `define` and the function's name, for example:
-
+Extern (or external) functions are functions which bodies are not defined in the current file. They are declared by placing `extern` after `define` and before the function's name. This is an example:
 ```
 define extern @printf(ptr, ...) i32
 ```
 
-An extern function is a function which body *is not defined in the current file*. An extern function cannot have a body, because it is supposed to be defined somewhere else.
+Extern functions doesn't have named parameters, this means that you only need to list the types of the parameters. Extern functions also doesn't have a body, because it must be defined elsewhere; Adding a body to an extern function will make Optic throw an error and refuse to compile.
 
-The parameter list of extern functions only contains the types of the parameters, but not the name. 
+In the example, we can also see `...`, which denotes that the function is variadic (can take a variadic number of parameters). These is only useful in extern functions since Optic's IR doesn't have any way to manipulate these parameters.
 
-### Variadic Functions
+## Basic Blocks
 
-You can define a function that takes a variadic number of arguments using `...` as the last parameter. 
+A function's body is composed by a sequence of basic block; every basic block is sequence of instructions without any branching. A basic block is usually limited by labels: a label starts a new basic block, finishing the last one. 
 
-Currently, there's no way to manage these arguments, so the only place where variadic functions are useful is in external functions, like `printf`.
+Every basic block has one strict rule: it MUST end with a terminator instruction. A terminator instruction is an instruction that changes the control flow by dividing, looping or terminating execution. See [all the terminator instructions](#terminatorbranching-instructions)
 
-## Instructions, Globals & Values
+---
 
-### Values
+# 2. Type System
 
-A Value is just a immediate value or virtual register, a Value can be assigned to a virtual register, and an instruction may return a Value. 
+Optic IR is a statically-typed language, which means you need to specify explicit type for instructions, functions, values, etc. 
+Optic supports all the following primitive types:
 
-This is a list of all value's descriptions and multiple examples
+| Type | Description |
+| :--: | :-- |
+| `i32` | 32-bit integer |
+| `i1` | 1-bit integer (a boolean) |
+| `f32` | 32-bit (single-presition) float |
+| `ptr` | Opaque pointer type |
+| `void` | Void type |
 
-| Description | Example |
-| :-- | :-- |
-| A virtual register | `%x` |
-| An integer literal, prefix with `-` to denote a negative literal | `2`, `-1` |
-| An Floating point number literal | `0.1`, `25.5` |
-| A global symbol | `@pi` |
+*There's also the `ascii` type, but this one is only usable on a global definition. See [more here](#globals)*
 
-### Labels 
+Optic also have arrays, collections of elements of the same type. These can be created using the `alloc` instruction, and access elements through `offset` (which returns the pointer to that element). This is a simple, runnable example:
+```
+define @main() i32 {
+  // create an array of 5 i32s
+  %my_arr = alloc i32, 5
+  
+  // access the first element position and store a value
+  %0 = offset %my_arr, i32, 0
+  store i32 %0, 5
 
-A label is a tag that denotes a position in the IR, an instruction can jump conditionally (with `br`) or unconditionally (with `jmp`) to them.
+  ret i32 0
+}
+``` 
 
-A label starts with `#`, for example: `#my_label`
+Optic doesn't currently support for user-defined types, but they will be supported in future versions.
 
-### Instructions
+> [!NOTE] 
+> Optic currently doesn't feature a type checker, this means it does not check if the types in the IR are correct or not.  
+> Future versions may implement a type checker or verifier.
 
-This is a list of all instructions, its mnemonics, syntax, description and an example. 
+---
 
-| Mnemonic | Syntax | Description | Example |
-| :-- | :-- | :-- | :-- |
-| `copy` | `copy TYPE VALUE` | Copies a value into a register | `%r = copy i32 42` |
-| `ret` | `ret TYPE VALUE` | returns from the current function with a Value | `ret i32 42` |
-| `add` | `add TYPE VALUE, VALUE` | adds two integer values | `%r = add i32 2, 2` |
-| `sub` | `sub TYPE VALUE, VALUE` | substracts two integer values | `%r = sub i32 2, 2` |
-| `mul` | `mul TYPE VALUE, VALUE` | multiplies two integer values | `%r = mul i32 2, 2` |
-| `div` | `div TYPE VALUE, VALUE` | divides two integer values (signed) | `%r = div i32 2, 2` |
-| `udiv` | `udiv TYPE VALUE, VALUE` | divides two integer values (unsigned) | `%r = udiv i32 2, 2` |
-| `call` | `call TYPE FUNC(TYPE VALUES, ...)` | calls a function with the specified arguments | `%r = call i32 @add(i32 2, i32 2)` |
-| `jmp` | `jmp LABEL` | jumps inconditionaly to a label | `jmp #end` |
-| `br` | `br VREG, LABEL, LABEL` | jumps conditionaly to a label or another based on the value on the register | `br %cond, #then, #else` |
-| `alloc` | `alloc TYPE[, NUM]` | allocates enough size in the stack to store a value of type `TYPE`, `NUM`-times (or 1 if not provided) | `%ptr = alloc i32, 5` |
-| `store` | `store TYPE PTR, VALUE` | stores `VALUE` (of type `TYPE`) inside `PTR` | `store i32 %ptr, 5` |
-| `load` | `load TYPE PTR` | loads the value of type `TYPE` stored in `PTR` | `%r = load i32 %ptr` |
-| `offset` | `offset PTR, TYPE, IDX` | calculates the offset of an element at index `IDX` in an array of values of type `TYPE`. `PTR` is the base pointer of the array | `%r = offset %ptr, i32, 0` | 
+# 3. Values & Literals
 
-#### comparison instructions family
+A value can be either a literal (e.g., `2`), a virtual register (e.g., `%x`) or a global (e.g., `@msg`). A value is exactly that, *a value* that an instruction can use. 
 
-Comparison instructios are a special case, because is not a single instruction, it's a "family of instructions".
+A literal is a kind of value that contains data of some primitive type, such as `i32`. The exact type of a literal may change depending on where it's used. Optic currently supports the following literals:
 
-All of them return a boolean value of type `i1`, and has a special syntax: `cPREFIX TYPE VALUE, VALUE`, where `TYPE` is the type of the values and the `PREFIX` is the type of comparison. These are all the allowed prefixes: 
+| Literal | Description | Example(s) |
+| :--: | :-- | :-- |
+| Integer | An integer number, may be negated (2's complement) using `-` | `2`, `-50` |
+| Float | A floating-point number, may be negated using `-` | `2.0`, `-3.14` |
+| String | An ASCII character sequence enclosed with quotes (only used inside globals) | `"Hello"`, `"World"` | 
 
-| Kind | Meaning |
-| :-- | :-- |
-| `eq` | equal to |
-| `ne` | not equal to |
-| `slt`/`ult` | signed/unsigned less than |
-| `sgt`/`ugt` | signed/unsigned greater than |
+# 4. Instruction Set Reference
 
-This is a simple example: `%r = ceq i32 %x, 5`
+<!--
+**NOTE**: This section could be improved by providing better explanations of 
+what does the instructions do exactly 
+(e.g., explaining the difference beetween ordered and unordered FP comparisons). 
+-->
 
-### Globals
+## Arithmetic Operations
 
-You can define a global variable writing `data`, optionally followed by `constant`, the name of the global (which needs to start with `@`), a `=` sign, and brackets containing the data. this is an example:
+| Instruction | Syntax (EBNF) | Description | Example |
+| :--: | :-- | :-- | :-- |
+| ADD | `Vreg "=" "add" Type Value, Value` | Integer addition | `%0 = add i32 2, 2` |
+| SUB | `Vreg "=" "sub" Type Value, Value` | Integer substraction | `%0 = sub i32 2, 2` |
+| MUL | `Vreg "=" "mul" Type Value, Value` | Integer multiplication | `%0 = mul i32 2, 2` |
+| DIV | `Vreg "=" "div" Type Value, Value` | Integer division (signed) | `%0 = div i32 2, 2` |
+| UDIV | `Vreg "=" "udiv" Type Value, Value` | Integer division (unsigned) | `%0 = udiv i32 2, 2` |
+| NEG | `Vreg "=" "neg" Type Value` | Integer negation | `%0 = neg i32 2` |
+| FADD | `Vreg "=" "fadd" Type Value, Value` | FP addition | `%0 = fadd f32 2.0, 2.0` |
+| FSUB | `Vreg "=" "fsub" Type Value, Value` | FP substraction | `%0 = fsub f32 2.0, 2.0` |
+| FMUL | `Vreg "=" "fmul" Type Value, Value` | FP multiplication | `%0 = fmul f32 2.0, 2.0` |
+| FDIV | `Vreg "=" "fdiv" Type Value, Value` | FP division | `%0 = fdiv f32 2.0, 2.0` |
+| FNEG | `Vreg "=" "fneg" Type Value` | FP negation | `%0 = fneg f32 2.0` |
+
+## Comparison Operations
+
+| Instruction | Syntax (EBNF) | Description | Example |
+| :--: | :-- | :-- | :-- |
+| CEQ | `Vreg "=" "ceq" Type Value, Value` | Integer Equal-To | `%0 = ceq i32 2, 2` |
+| CNE | `Vreg "=" "cne" Type Value, Value` | Integer Not-Equal | `%0 = cne i32 2, 2` |
+| CSLT | `Vreg "=" "cslt" Type Value, Value` | Integer Less-Than (signed) | `%0 = cslt i32 2, 2` |
+| CULT | `Vreg "=" "cult" Type Value, Value` | Integer Less-Than (unsigned) | `%0 = cult i32 2, 2` |
+| FCOEQ | `Vreg "=" "fcoeq" Type Value, Value` | FP Equal-To (ordered) | `%0 = fcoeq f32 2.0, 2.0` |
+| FCUEQ | `Vreg "=" "fcueq" Type Value, Value` | FP Equal-To (unordered) | `%0 = fcueq f32 2.0, 2.0` |
+| FCONE | `Vreg "=" "fcone" Type Value, Value` | FP Not-Equal (ordered) | `%0 = fcone f32 2.0, 2.0` |
+| FCUNE | `Vreg "=" "fcune" Type Value, Value` | FP Not-Equal (unordered) | `%0 = fcune f32 2.0, 2.0` |
+| FCOLT | `Vreg "=" "fcolt" Type Value, Value` | FP Less-Than (ordered) | `%0 = fcolt f32 2.0, 2.0` |
+| FCULT | `Vreg "=" "fcult" Type Value, Value` | FP Less-Than | `%0 = fcult f32 2.0, 2.0` |
+| FCORD | `Vreg "=" "fcord" Type Value, Value` | FP Ordered Cmp | `%0 = fcord f32 2.0` |
+| FCUNO | `Vreg "=" "fneg" Type Value, Value` | FP Unordered Cmp | `%0 = fcuno f32 2.0` |
+
+## Terminator/Branching Instructions
+
+| Instruction | Syntax (EBNF) | Description | Example |
+| :--: | :-- | :-- | :-- |
+| RET | `"ret" Type Value` | Return a value | `ret i32 2` (or `ret void`) |
+| JMP | `"jmp" Label` | Unconditional Jump | `jmp #then_br` |
+| BR | `"br" Value, Label, Label` | Conditional Jump | `br %0, #then_br, #else_br` |
+
+## Memory Operations
+
+| Instruction | Syntax (EBNF) | Description | Example |
+| :--: | :-- | :-- | :-- |
+| COPY | `Vreg = "copy" Type Value` | Copy value | `%0 = copy i32 2` |
+| ALLOC | `Vreg = "alloc" Type[, Value]` | Allocate memory in stack for `Type` times 1 or `Value` | `%0 = alloc i32, 5` |
+| LOAD | `Vreg = "load" Type Value` | Load value of type `Type` from a pointet | `%0 = load i32 %ptr` |
+| STORE | `"store" Type Value, Value` | Store value of type `Type` onto a pointer | `store i32 %ptr, 2` |
+
+## Function Calls
+
+To call a function, you use the `call` instruction, with the following EBNF syntax:
 
 ```
-data @msg = { ascii "Hello, World!", i1 0 }
+[Vreg "="] "call" Type GlobalSym "(" { Type Value "," } ")" 
 ```
 
-A global variable only stores raw bytes, this means the example above is storing an array of 14 bytes. To access the data inside of a global variable you need to use the `load` instruction, because a global variable is just a memory address.
+A simple example:
+
+```
+%0  = call i32 @add(i32 2, i32 2)
+```
+
+If the destination virtual register is ommited, then the value will be discarded.
+
+# IR Invariants & Correctness
+
+The Optic IR has some invariants, these are rules that must remain true through all the program, always. These are the Optic IR invariants:
+
+1. *Virtual registers MUST start with `%`*
+2. *Global symbols (function names and/or globals' name) MUST start with `@`*
+3. *Every basic block MUST end with a terminator instruction*
+4. *Extern functions MUST NO have a body*
+5. *Non-Extern functions MUST have a body*
+  
+--Note that these invariant may change, deleted, or new invariants may be added--
+
+## Correctness
+
+Optic currently doesn't feature a verifier for the IR, this means even if your IR code doesn't break any invariants, it may still be wrong. For example, types; Optic doesn't verify types at all in the IR, this means that you *technically* can, for example, return an `i32` value from a function of type `f32` without Optic complaining.
+
+Futures versions of Optic will (probably) include some sort of verifier for the IR. For now, you need to manually double-check your code to ensure that the IR is correct, otherwise your program may compile but behave in unexpected ways.
+
+# Complete Example
+
+This is a complete, working example of the Optic IR, using most of its instructions and features:
+
+```
+// a comment!
+
+// define some globals
+data constant @PI = { f32 3.1415927 }
+data constant @msg = { ascii "area of the circle is: %f", i1 0 }
+
+// define an extern, variadic function
+define extern @printf(ptr, ...) i32
+
+// define more functions
+define @area_of_circle(%radius f32) f32 {
+  // formula: πr^2 
+  %0 = fmul f32 %radius, %radius
+  %1 = load f32 @PI
+  %2 = fmul f32 %1, %0
+  ret f32 %2
+}
+
+define @main() i32 {
+  %radius = copy f32 5.0
+  %area = call f32 @area_of_circle(f32 %radius)
+
+  call i32 @printf(ptr @msg, f32 %area)
+
+  ret i32 0
+}
+```
+
+To compile it, save that example into a `test.opt` file, and run this commands:
+```bash
+cargo run -- test.opt -o test.c
+clang test.c -o test -w
+```
+
+*If you are on windows, add `.exe`. You can use other C compiler, not only Clang*
