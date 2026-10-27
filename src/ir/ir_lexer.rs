@@ -24,6 +24,9 @@ pub enum TokenKind {
     Fmul, 
     Fdiv,
     Fneg,
+    Or,
+    And,
+    Xor,
     Call,
     Jmp,
     Ceq, Cne,
@@ -152,6 +155,9 @@ impl IrLexer {
             b"fmul" => TokenKind::Fmul,
             b"fdiv" => TokenKind::Fdiv,
             b"fneg" => TokenKind::Fneg,
+            b"or" => TokenKind::Or,
+            b"and" => TokenKind::And,
+            b"xor" => TokenKind::Xor,
             b"call" => TokenKind::Call,
             b"jmp" => TokenKind::Jmp,
             b"ceq" => TokenKind::Ceq, b"cne" => TokenKind::Cne,
@@ -261,6 +267,7 @@ impl IrLexer {
             }
             b'-' => {
                 let start = self.cursor;
+                self.cursor += 1; // do not include `-`
                 let mut dot = false;
 
                 while !self.is_at_end() && self.is_numeric() || self.peek() == b'.' { 

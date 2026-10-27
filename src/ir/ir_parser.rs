@@ -191,6 +191,9 @@ impl IrParser {
             TokenKind::Fdiv => OpKind::Fdiv,
             TokenKind::Neg => OpKind::Neg,
             TokenKind::Fneg => OpKind::Fneg,
+            TokenKind::Or => OpKind::Or,
+            TokenKind::And => OpKind::And,
+            TokenKind::Xor => OpKind::Xor,
             TokenKind::Ceq => OpKind::CmpEq,
             TokenKind::Cne => OpKind::CmpNe,
             TokenKind::Cslt => OpKind::CmpSlt,
@@ -373,13 +376,14 @@ impl IrParser {
                     TokenKind::Udiv  | TokenKind::Neg   | 
                     TokenKind::Fadd  | TokenKind::Fsub  | 
                     TokenKind::Fmul  | TokenKind::Fdiv  | 
-                    TokenKind::Fneg  | TokenKind::Ceq   | 
-                    TokenKind::Cne   | TokenKind::Cslt  | 
-                    TokenKind::Cult  | TokenKind::Fcoeq |
-                    TokenKind::Fcone | TokenKind::Fcolt |
-                    TokenKind::Fcord | TokenKind::Fcueq |
-                    TokenKind::Fcult | TokenKind::Fcune |
-                    TokenKind::Fcuno => self.parse_ins_op(vreg),
+                    TokenKind::Fneg  | TokenKind::Or    | 
+                    TokenKind::And   | TokenKind::Xor   | 
+                    TokenKind::Ceq   | TokenKind::Cne   | 
+                    TokenKind::Cslt  | TokenKind::Cult  | 
+                    TokenKind::Fcoeq | TokenKind::Fcone | 
+                    TokenKind::Fcolt | TokenKind::Fcord | 
+                    TokenKind::Fcueq | TokenKind::Fcult | 
+                    TokenKind::Fcune | TokenKind::Fcuno => self.parse_ins_op(vreg),
                     _ => {
                         error!(
                             &self.file_name,
