@@ -19,7 +19,7 @@ Here you willl find a complete technical specification and reference guide for w
 2. [Type System](#2-type-system)
 3. [Values & Literals](#3-values--literals)
 4. [Instruction Set Reference]()
-   - [Arithmetic Operations](#arithmetic-operations)
+   - [Arithmetic & Bitwise Operations](#arithmetic-operations)
    - [Comparison Operations](#comparison-operations)
    - [Terminator/Branching Operations](#terminatorbranching-instructions)
    - [Memory operations](#memory-operations)
@@ -142,7 +142,7 @@ what does the instructions do exactly
 (e.g., explaining the difference beetween ordered and unordered FP comparisons). 
 -->
 
-## Arithmetic Operations
+## Arithmetic & Bitwise Operations
 
 | Instruction | Syntax (EBNF) | Description | Example |
 | :--: | :-- | :-- | :-- |
@@ -157,6 +157,9 @@ what does the instructions do exactly
 | FMUL | `Vreg "=" "fmul" Type Value, Value` | FP multiplication | `%0 = fmul f32 2.0, 2.0` |
 | FDIV | `Vreg "=" "fdiv" Type Value, Value` | FP division | `%0 = fdiv f32 2.0, 2.0` |
 | FNEG | `Vreg "=" "fneg" Type Value` | FP negation | `%0 = fneg f32 2.0` |
+| AND | `Vreg "=" "and" Type, Value, Value` | Bitwise AND | `%0 = and i1 1, 0` |
+| OR | `Vreg "=" "or" Type, Value, Value` | Bitwise OR | `%0 = or i1 1, 0` |
+| XOR | `Vreg "=" "xor" Type, Value, Value` | Bitwise XOR | `%0 = xor i1 1, 0` | 
 
 ## Comparison Operations
 
@@ -173,7 +176,7 @@ what does the instructions do exactly
 | FCOLT | `Vreg "=" "fcolt" Type Value, Value` | FP Less-Than (ordered) | `%0 = fcolt f32 2.0, 2.0` |
 | FCULT | `Vreg "=" "fcult" Type Value, Value` | FP Less-Than | `%0 = fcult f32 2.0, 2.0` |
 | FCORD | `Vreg "=" "fcord" Type Value, Value` | FP Ordered Cmp | `%0 = fcord f32 2.0` |
-| FCUNO | `Vreg "=" "fneg" Type Value, Value` | FP Unordered Cmp | `%0 = fcuno f32 2.0` |
+| FCUNO | `Vreg "=" "fcuno" Type Value, Value` | FP Unordered Cmp | `%0 = fcuno f32 2.0` |
 
 ## Terminator/Branching Instructions
 
