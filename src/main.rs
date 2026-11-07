@@ -5,7 +5,7 @@ mod cfg;
 mod ssa;
 mod codegen;
 
-use std::{collections::HashMap, time::Instant};
+use std::{collections::HashMap, io::Write, time::Instant};
 
 // simple auxiliar function to format durations
 fn format_time(secs: f32, total: f32) -> String {
@@ -86,11 +86,17 @@ Options:
     }
     let ssa_decon_time = start.elapsed().as_secs_f32();
 
-    let mut codegen = codegen::c_backend::CBackend::new(output, &mut module);
+    let mut out = Vec::new();
+    let mut codegen = codegen::c_backend::CBackend::new(&mut out, &mut module);
 
     start = Instant::now();
     codegen.compile();
     let codegen_time = start.elapsed().as_secs_f32();
+
+    std::fs::File::create(output)
+        .unwrap()
+        .write_all(&out)
+        .unwrap();
 
     let total_time = parse_time + cfg_build_time + ssa_con_time + ssa_decon_time + codegen_time;
 

@@ -1,6 +1,5 @@
 //! This module implements the C backend for Optic
 
-use std::fs::File;
 use std::io::{self, BufRead, BufWriter, Write};
 
 use crate::module::{
@@ -10,14 +9,14 @@ use crate::module::{
 };
 
 pub struct CBackend<'a> {
-    out:     File,
+    out:     &'a mut Vec<u8>,
     module:  &'a Module,
 }
 
 impl<'a> CBackend<'a> {
-    pub fn new(out: &str, module: &'a Module) -> Self {
+    pub fn new(out: &'a mut Vec<u8>, module: &'a Module) -> Self {
         CBackend {
-            out:  File::create(out).expect("error: could not open or create the output file"),
+            out,
             module,
         }
     }
