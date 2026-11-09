@@ -17,6 +17,7 @@ fn format_time(secs: f32, total: f32) -> String {
     format!("{:>5.1} {} ({:>5.1}%)", format_sec.0, format_sec.1, (secs / total) * 100.0)
     
 }
+
 fn main() {
     let mut input = "";
     let mut output = "";
@@ -51,12 +52,23 @@ Options:
         i += 1;
     }
 
-    let source = std::fs::read_to_string(input).expect("error: could not open the source file");
-
-    let mut parser = ir::ir_parser::IrParser::new(&source, input.to_string());
+    let source = std::fs::read(input).expect("error: could not open the source file");
 
     let mut start = Instant::now();
-    let mut module = parser.parse_module(input);
+    let mut module = if input.split('.').last().unwrap() == ".optbc" {
+        match ir::bytecode::BytecodeParser::new(&source).parse_module() {
+            Ok(m) => m,
+            Err(e) => {
+                eprintln!("\x1b[31mbytecode error:\x1b[0m {e}");
+                std::process::exit(1);
+            }
+        }
+    } else {
+        ir::ir_parser::IrParser::new(
+            str::from_utf8(&source).unwrap(), 
+            input.to_string()
+        ).parse_module(input)    
+    };
     let parse_time = start.elapsed().as_secs_f32();
 
     start = Instant::now();

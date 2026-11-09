@@ -4,5 +4,6 @@
 //! This frontend transform the textual IR into a CFG (Control Flow Graph),
 //! that then can be optimized
 
+pub mod bytecode;
 pub mod ir_lexer;
 pub mod ir_parser;
